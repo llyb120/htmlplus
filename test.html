@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reactive-Lit 功能测试</title>
+    <script src="reactive-lit.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #667eea;
+        }
+        .pass {
+            color: green;
+        }
+        .fail {
+            color: red;
+        }
+        button {
+            margin: 5px;
+            padding: 8px 16px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Reactive-Lit 功能测试</h1>
+
+    <div class="test-section">
+        <h3>测试 1: 响应式基础 <span id="test1-status"></span></h3>
+        <div id="test1"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>测试 2: 模板渲染 <span id="test2-status"></span></h3>
+        <div id="test2"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>测试 3: 事件处理 <span id="test3-status"></span></h3>
+        <div id="test3"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>测试 4: 计算属性 <span id="test4-status"></span></h3>
+        <div id="test4"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>测试 5: 列表渲染 <span id="test5-status"></span></h3>
+        <div id="test5"></div>
+    </div>
+
+    <script>
+        const { html, render, reactive, effect, computed, createComponent, createState } = window.ReactiveLit;
+
+        function setTestStatus(testId, passed) {
+            const statusEl = document.getElementById(`test${testId}-status`);
+            statusEl.textContent = passed ? '✅ 通过' : '❌ 失败';
+            statusEl.className = passed ? 'pass' : 'fail';
+        }
+
+        // 测试 1: 响应式基础
+        try {
+            const state = reactive({ count: 0 });
+            let callCount = 0;
+            
+            effect(() => {
+                callCount++;
+                const val = state.count;
+            });
+            
+            state.count = 1;
+            state.count = 2;
+            
+            const passed = callCount === 3; // 初始执行1次 + 2次更新
+            setTestStatus(1, passed);
+            
+            document.getElementById('test1').innerHTML = `
+                <p>Effect 调用次数: ${callCount} (预期: 3)</p>
+                <p>结果: ${passed ? '✅ 响应式系统正常工作' : '❌ 响应式系统有问题'}</p>
+            `;
+        } catch (e) {
+            setTestStatus(1, false);
+            document.getElementById('test1').innerHTML = `<p>错误: ${e.message}</p>`;
+        }
+
+        // 测试 2: 模板渲染
+        try {
+            const container = document.getElementById('test2');
+            const [value, setValue] = createState('Hello');
+            
+            createComponent(() => {
+                const template = html`<p>消息: ${value()}</p>`;
+                render(template, container);
+            }, container);
+            
+            setTimeout(() => {
+                setValue('World');
+                setTimeout(() => {
+                    const passed = container.textContent.includes('World');
+                    setTestStatus(2, passed);
+                }, 50);
+            }, 50);
+            
+        } catch (e) {
+            setTestStatus(2, false);
+            document.getElementById('test2').innerHTML += `<p>错误: ${e.message}</p>`;
+        }
+
+        // 测试 3: 事件处理
+        try {
+            const container = document.getElementById('test3');
+            let clicked = false;
+            
+            createComponent(() => {
+                const handleClick = () => {
+                    clicked = true;
+                    setTestStatus(3, true);
+                    container.querySelector('p').textContent = '✅ 按钮已点击！';
+                };
+                
+                const template = html`
+                    <div>
+                        <button onClick=${handleClick}>点击我测试事件</button>
+                        <p>等待点击...</p>
+                    </div>
+                `;
+                render(template, container);
+            }, container);
+            
+        } catch (e) {
+            setTestStatus(3, false);
+            document.getElementById('test3').innerHTML = `<p>错误: ${e.message}</p>`;
+        }
+
+        // 测试 4: 计算属性
+        try {
+            const state = reactive({
+                a: 2,
+                b: 3
+            });
+            
+            const sum = computed(() => state.a + state.b);
+            
+            const initial = sum();
+            state.a = 5;
+            const after = sum();
+            
+            const passed = initial === 5 && after === 8;
+            setTestStatus(4, passed);
+            
+            document.getElementById('test4').innerHTML = `
+                <p>初始计算: ${initial} (预期: 5)</p>
+                <p>更新后计算: ${after} (预期: 8)</p>
+                <p>结果: ${passed ? '✅ 计算属性正常工作' : '❌ 计算属性有问题'}</p>
+            `;
+        } catch (e) {
+            setTestStatus(4, false);
+            document.getElementById('test4').innerHTML = `<p>错误: ${e.message}</p>`;
+        }
+
+        // 测试 5: 列表渲染
+        try {
+            const container = document.getElementById('test5');
+            
+            createComponent(() => {
+                const state = reactive({
+                    items: ['项目A', '项目B', '项目C']
+                });
+                
+                const addItem = () => {
+                    state.items.push('项目D');
+                    setTimeout(() => {
+                        const passed = container.textContent.includes('项目D');
+                        setTestStatus(5, passed);
+                    }, 50);
+                };
+                
+                const template = html`
+                    <div>
+                        <button onClick=${addItem}>添加项目</button>
+                        <ul>
+                            ${state.items.map(item => html`<li>${item}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+                render(template, container);
+            }, container);
+            
+        } catch (e) {
+            setTestStatus(5, false);
+            document.getElementById('test5').innerHTML = `<p>错误: ${e.message}</p>`;
+        }
+    </script>
+</body>
+</html>
+

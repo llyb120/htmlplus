@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reactive-Lit 框架示例</title>
+    <script src="reactive-lit.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 40px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .example-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .example-card h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        .demo-area {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 5px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        input[type="text"] {
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            width: 200px;
+            margin: 5px;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .counter {
+            font-size: 3em;
+            font-weight: bold;
+            color: #667eea;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .todo-item {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: all 0.3s;
+        }
+        
+        .todo-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+        
+        .todo-item.completed {
+            opacity: 0.6;
+            text-decoration: line-through;
+        }
+        
+        .user-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        
+        .user-card img {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 4px solid white;
+            margin-bottom: 15px;
+        }
+        
+        .user-card h3 {
+            margin: 10px 0;
+            font-size: 1.8em;
+        }
+        
+        .user-card .role {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .product-card {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        
+        .product-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .product-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+        
+        .product-info {
+            padding: 15px;
+        }
+        
+        .product-info h4 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .product-price {
+            color: #667eea;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+        
+        .chart-bar {
+            height: 30px;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            margin: 10px 0;
+            border-radius: 5px;
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            color: white;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Reactive-Lit 框架示例集合</h1>
+        
+        <!-- 示例 1: 基础计数器 -->
+        <div class="example-card">
+            <h2>示例 1: 响应式计数器</h2>
+            <p>展示基础的响应式状态管理和事件处理</p>
+            <div id="counter-demo" class="demo-area"></div>
+        </div>
+        
+        <!-- 示例 2: 双向绑定输入框 -->
+        <div class="example-card">
+            <h2>示例 2: 双向数据绑定</h2>
+            <p>实时响应用户输入，展示双向绑定效果</p>
+            <div id="input-demo" class="demo-area"></div>
+        </div>
+        
+        <!-- 示例 3: Todo List -->
+        <div class="example-card">
+            <h2>示例 3: 待办事项列表</h2>
+            <p>动态列表渲染、条件渲染和数组操作</p>
+            <div id="todo-demo" class="demo-area"></div>
+        </div>
+        
+        <!-- 示例 4: 用户信息卡片 -->
+        <div class="example-card">
+            <h2>示例 4: 动态用户卡片</h2>
+            <p>属性绑定、样式绑定和计算属性</p>
+            <div id="user-demo" class="demo-area"></div>
+        </div>
+        
+        <!-- 示例 5: 商品列表 -->
+        <div class="example-card">
+            <h2>示例 5: 商品列表筛选</h2>
+            <p>列表渲染、过滤和计算属性的综合应用</p>
+            <div id="products-demo" class="demo-area"></div>
+        </div>
+        
+        <!-- 示例 6: 动态图表 -->
+        <div class="example-card">
+            <h2>示例 6: 实时数据图表</h2>
+            <p>动态样式绑定和定时器应用</p>
+            <div id="chart-demo" class="demo-area"></div>
+        </div>
+    </div>
+
+    <script>
+        const { html, render, reactive, effect, computed, createComponent, createState } = window.ReactiveLit;
+
+        // ========== 示例 1: 响应式计数器 ==========
+        function counterExample() {
+            const container = document.getElementById('counter-demo');
+            
+            createComponent(() => {
+                const [count, setCount] = createState(0);
+                
+                const template = html`
+                    <div style="text-align: center;">
+                        <div class="counter">${count()}</div>
+                        <button onClick=${() => setCount(count() - 1)}>➖ 减少</button>
+                        <button onClick=${() => setCount(0)}>🔄 重置</button>
+                        <button onClick=${() => setCount(count() + 1)}>➕ 增加</button>
+                        <div style="margin-top: 20px; color: #666;">
+                            ${count() > 0 ? '📈 正数' : count() < 0 ? '📉 负数' : '⚖️ 零'}
+                        </div>
+                    </div>
+                `;
+                
+                render(template, container);
+            }, container);
+        }
+
+        // ========== 示例 2: 双向数据绑定 ==========
+        function inputExample() {
+            const container = document.getElementById('input-demo');
+            
+            createComponent(() => {
+                const [name, setName] = createState('');
+                const [email, setEmail] = createState('');
+                
+                const template = html`
+                    <div>
+                        <div style="margin-bottom: 20px;">
+                            <input 
+                                type="text" 
+                                placeholder="请输入姓名"
+                                .value=${name()}
+                                onInput=${(e) => setName(e.target.value)}
+                            />
+                            <input 
+                                type="text" 
+                                placeholder="请输入邮箱"
+                                .value=${email()}
+                                onInput=${(e) => setEmail(e.target.value)}
+                            />
+                        </div>
+                        <div style="padding: 20px; background: white; border-radius: 8px; border-left: 4px solid #667eea;">
+                            <h3 style="color: #667eea; margin-bottom: 10px;">实时预览：</h3>
+                            <p><strong>姓名：</strong>${name() || '(未填写)'}</p>
+                            <p><strong>邮箱：</strong>${email() || '(未填写)'}</p>
+                            <p><strong>字符总数：</strong>${name().length + email().length}</p>
+                        </div>
+                    </div>
+                `;
+                
+                render(template, container);
+            }, container);
+        }
+
+        // ========== 示例 3: Todo List ==========
+        function todoExample() {
+            const container = document.getElementById('todo-demo');
+            
+            createComponent(() => {
+                const state = reactive({
+                    todos: [
+                        { id: 1, text: '学习 Reactive-Lit 框架', completed: false },
+                        { id: 2, text: '构建响应式应用', completed: false }
+                    ],
+                    newTodo: ''
+                });
+                
+                const addTodo = () => {
+                    if (state.newTodo.trim()) {
+                        state.todos.push({
+                            id: Date.now(),
+                            text: state.newTodo,
+                            completed: false
+                        });
+                        state.newTodo = '';
+                    }
+                };
+                
+                const toggleTodo = (id) => {
+                    const todo = state.todos.find(t => t.id === id);
+                    if (todo) todo.completed = !todo.completed;
+                };
+                
+                const deleteTodo = (id) => {
+                    const index = state.todos.findIndex(t => t.id === id);
+                    if (index > -1) state.todos.splice(index, 1);
+                };
+                
+                const template = html`
+                    <div>
+                        <div style="margin-bottom: 20px;">
+                            <input 
+                                type="text" 
+                                placeholder="添加新任务..."
+                                .value=${state.newTodo}
+                                onInput=${(e) => state.newTodo = e.target.value}
+                                onKeypress=${(e) => e.key === 'Enter' && addTodo()}
+                            />
+                            <button onClick=${addTodo}>➕ 添加</button>
+                        </div>
+                        
+                        <div>
+                            ${state.todos.map(todo => html`
+                                <div class="todo-item ${todo.completed ? 'completed' : ''}">
+                                    <span onClick=${() => toggleTodo(todo.id)} style="cursor: pointer; flex: 1;">
+                                        ${todo.completed ? '✅' : '⭕'} ${todo.text}
+                                    </span>
+                                    <button onClick=${() => deleteTodo(todo.id)}>🗑️ 删除</button>
+                                </div>
+                            `).join('')}
+                        </div>
+                        
+                        <div style="margin-top: 20px; padding: 15px; background: white; border-radius: 8px;">
+                            <strong>统计：</strong>
+                            总计 ${state.todos.length} 项，
+                            已完成 ${state.todos.filter(t => t.completed).length} 项，
+                            待完成 ${state.todos.filter(t => !t.completed).length} 项
+                        </div>
+                    </div>
+                `;
+                
+                render(template, container);
+            }, container);
+        }
+
+        // ========== 示例 4: 用户信息卡片 ==========
+        function userExample() {
+            const container = document.getElementById('user-demo');
+            
+            createComponent(() => {
+                const user = reactive({
+                    name: '张三',
+                    role: '前端工程师',
+                    avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix',
+                    skills: 85
+                });
+                
+                const updateUser = () => {
+                    const names = ['张三', '李四', '王五', '赵六'];
+                    const roles = ['前端工程师', '后端工程师', '全栈工程师', '架构师'];
+                    user.name = names[Math.floor(Math.random() * names.length)];
+                    user.role = roles[Math.floor(Math.random() * roles.length)];
+                    user.skills = Math.floor(Math.random() * 50) + 50;
+                    user.avatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${Date.now()}`;
+                };
+                
+                const template = html`
+                    <div>
+                        <div class="user-card">
+                            <img src="${user.avatar}" alt="${user.name}">
+                            <h3>${user.name}</h3>
+                            <p class="role">${user.role}</p>
+                            <div style="margin-top: 20px;">
+                                <div style="background: rgba(255,255,255,0.2); border-radius: 10px; padding: 10px;">
+                                    <div style="margin-bottom: 5px;">技能等级：${user.skills}%</div>
+                                    <div style="background: rgba(255,255,255,0.3); border-radius: 5px; overflow: hidden;">
+                                        <div style="width: ${user.skills}%; height: 10px; background: white; border-radius: 5px; transition: width 0.5s;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="text-align: center; margin-top: 20px;">
+                            <button onClick=${updateUser}>🎲 随机切换用户</button>
+                        </div>
+                    </div>
+                `;
+                
+                render(template, container);
+            }, container);
+        }
+
+        // ========== 示例 5: 商品列表筛选 ==========
+        function productsExample() {
+            const container = document.getElementById('products-demo');
+            
+            createComponent(() => {
+                const state = reactive({
+                    products: [
+                        { id: 1, name: 'MacBook Pro', price: 12999, category: '电脑' },
+                        { id: 2, name: 'iPhone 15', price: 5999, category: '手机' },
+                        { id: 3, name: 'iPad Air', price: 4799, category: '平板' },
+                        { id: 4, name: 'AirPods Pro', price: 1999, category: '配件' },
+                        { id: 5, name: 'Magic Mouse', price: 799, category: '配件' }
+                    ],
+                    filter: '全部',
+                    sortBy: 'default'
+                });
+                
+                const getFilteredProducts = () => {
+                    let filtered = state.filter === '全部' 
+                        ? state.products 
+                        : state.products.filter(p => p.category === state.filter);
+                    
+                    if (state.sortBy === 'price-asc') {
+                        filtered = [...filtered].sort((a, b) => a.price - b.price);
+                    } else if (state.sortBy === 'price-desc') {
+                        filtered = [...filtered].sort((a, b) => b.price - a.price);
+                    }
+                    
+                    return filtered;
+                };
+                
+                const template = html`
+                    <div>
+                        <div style="margin-bottom: 20px;">
+                            <button onClick=${() => state.filter = '全部'} 
+                                    style="${state.filter === '全部' ? 'opacity: 1;' : 'opacity: 0.6;'}">
+                                全部
+                            </button>
+                            <button onClick=${() => state.filter = '电脑'}
+                                    style="${state.filter === '电脑' ? 'opacity: 1;' : 'opacity: 0.6;'}">
+                                电脑
+                            </button>
+                            <button onClick=${() => state.filter = '手机'}
+                                    style="${state.filter === '手机' ? 'opacity: 1;' : 'opacity: 0.6;'}">
+                                手机
+                            </button>
+                            <button onClick=${() => state.filter = '平板'}
+                                    style="${state.filter === '平板' ? 'opacity: 1;' : 'opacity: 0.6;'}">
+                                平板
+                            </button>
+                            <button onClick=${() => state.filter = '配件'}
+                                    style="${state.filter === '配件' ? 'opacity: 1;' : 'opacity: 0.6;'}">
+                                配件
+                            </button>
+                            <span style="margin: 0 20px;">|</span>
+                            <button onClick=${() => state.sortBy = 'price-asc'}>价格升序</button>
+                            <button onClick=${() => state.sortBy = 'price-desc'}>价格降序</button>
+                        </div>
+                        
+                        <div class="product-grid">
+                            ${getFilteredProducts().map(product => html`
+                                <div class="product-card">
+                                    <img src="https://via.placeholder.com/300x200/667eea/ffffff?text=${encodeURIComponent(product.name)}" alt="${product.name}">
+                                    <div class="product-info">
+                                        <h4>${product.name}</h4>
+                                        <p style="color: #999; margin: 5px 0;">${product.category}</p>
+                                        <div class="product-price">¥${product.price}</div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        
+                        <div style="margin-top: 20px; padding: 15px; background: white; border-radius: 8px; text-align: center;">
+                            显示 ${getFilteredProducts().length} 个商品
+                        </div>
+                    </div>
+                `;
+                
+                render(template, container);
+            }, container);
+        }
+
+        // ========== 示例 6: 动态图表 ==========
+        function chartExample() {
+            const container = document.getElementById('chart-demo');
+            
+            createComponent(() => {
+                const state = reactive({
+                    data: [
+                        { label: '周一', value: 65 },
+                        { label: '周二', value: 78 },
+                        { label: '周三', value: 82 },
+                        { label: '周四', value: 45 },
+                        { label: '周五', value: 91 }
+                    ]
+                });
+                
+                const randomize = () => {
+                    state.data.forEach(item => {
+                        item.value = Math.floor(Math.random() * 100);
+                    });
+                };
+                
+                const addDay = () => {
+                    const days = ['周六', '周日', '周八', '周九', '周十'];
+                    const nextDay = days[state.data.length - 5] || `Day ${state.data.length + 1}`;
+                    state.data.push({
+                        label: nextDay,
+                        value: Math.floor(Math.random() * 100)
+                    });
+                };
+                
+                const template = html`
+                    <div>
+                        <div style="margin-bottom: 20px;">
+                            <button onClick=${randomize}>🎲 随机数据</button>
+                            <button onClick=${addDay}>➕ 添加一天</button>
+                            <button onClick=${() => state.data.length > 1 && state.data.pop()}>➖ 删除最后一天</button>
+                        </div>
+                        
+                        <div>
+                            ${state.data.map(item => html`
+                                <div style="margin-bottom: 15px;">
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                        <strong>${item.label}</strong>
+                                        <span>${item.value}%</span>
+                                    </div>
+                                    <div class="chart-bar" style="width: ${item.value}%;">
+                                        ${item.value > 20 ? item.value + '%' : ''}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        
+                        <div style="margin-top: 20px; padding: 15px; background: white; border-radius: 8px;">
+                            <strong>统计：</strong>
+                            平均值：${Math.round(state.data.reduce((sum, item) => sum + item.value, 0) / state.data.length)}%，
+                            最大值：${Math.max(...state.data.map(item => item.value))}%，
+                            最小值：${Math.min(...state.data.map(item => item.value))}%
+                        </div>
+                    </div>
+                `;
+                
+                render(template, container);
+            }, container);
+        }
+
+        // 页面加载后初始化所有示例
+        document.addEventListener('DOMContentLoaded', () => {
+            counterExample();
+            inputExample();
+            todoExample();
+            userExample();
+            productsExample();
+            chartExample();
+        });
+    </script>
+</body>
+</html>
+
