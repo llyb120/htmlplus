@@ -144,6 +144,8 @@
 
             console.log('123')
             updateUserInfo()
+
+            const flag = useState(false)
             
             return () => html`
                 <div style="padding: 20px; background: #f5f5f5; border-radius: 8px; margin: 20px 0;">
@@ -152,9 +154,34 @@
                     <input value=${age2()} onInput=${(e) => age2(e.target.value)}>
                     <p>点赞数：${likes()}</p>
                     <button onClick=${() => likes(likes() + 1)}>👍 点赞</button>
+
+                    ${
+                        flag() ? html`<tick-div></tick-div>` : ''
+                    }
+
+                    <button onClick=${() => flag(!flag())}>${flag()?'卸载计时器':'挂载计时器'}</button>
                 </div>
             `;
         });
+
+        createComponent("tick-div", () => {
+            const count = useState(0);
+            var timer = setInterval(() => {
+                console.log("计时器触发")
+                count(count() + 1);
+            }, 1000);
+
+            onUnmounted(() => {
+                console.log("卸载成功")
+                clearInterval(timer)
+            })
+
+            return () => html`
+                <div>
+                    <h1>${count()}</h1>
+                </div>
+            `
+        })
 
         // 示例 3: 支持插槽的组件
         createComponent('card-box', ({ title, slot }) => {
