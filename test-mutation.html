@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>直接修改测试</title>
+    <script src="reactive-lit.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .test-box {
+            border: 2px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            background: #f9f9ff;
+        }
+        .display {
+            background: #fff;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            border-left: 4px solid #667eea;
+        }
+        .item {
+            background: #e3f2fd;
+            padding: 8px 12px;
+            margin: 5px 0;
+            border-radius: 5px;
+            display: inline-block;
+            margin-right: 10px;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        .success {
+            background: #4caf50;
+        }
+        .danger {
+            background: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 直接修改响应式测试</h1>
+        <p class="subtitle">测试 arr.push()、obj.a++ 等直接修改操作</p>
+
+        <div id="app"></div>
+    </div>
+
+    <script>
+        const { html, createComponent, useState } = window.ReactiveLit;
+
+        createComponent('mutation-test', () => {
+            const arr = useState([1, 2, 3]);
+            const obj = useState({ 
+                count: 0, 
+                name: 'React',
+                nested: { value: 100 }
+            });
+            const log = useState([]);
+
+            const addLog = (message) => {
+                log().push(`[${new Date().toLocaleTimeString()}] ${message}`);
+            };
+
+            return html`
+                <div class="test-box">
+                    <h3>📊 当前状态</h3>
+                    
+                    <div class="display">
+                        <strong>数组 (${arr().length} 项):</strong><br>
+                        ${arr().map(item => html`<span class="item">${item}</span>`)}
+                    </div>
+
+                    <div class="display">
+                        <strong>对象:</strong><br>
+                        count: ${obj().count}<br>
+                        name: ${obj().name}<br>
+                        nested.value: ${obj().nested.value}
+                    </div>
+                </div>
+
+                <div class="test-box">
+                    <h3>🔧 数组操作</h3>
+                    
+                    <button onClick=${() => {
+                        arr().push(Math.floor(Math.random() * 100));
+                        addLog('✅ arr.push() 添加随机数');
+                    }}>📝 push(随机数)</button>
+
+                    <button onClick=${() => {
+                        const removed = arr().pop();
+                        addLog(`✅ arr.pop() 删除了 ${removed}`);
+                    }} class="danger">🗑️ pop()</button>
+
+                    <button onClick=${() => {
+                        arr().unshift(0);
+                        addLog('✅ arr.unshift(0) 在开头添加');
+                    }}>⬅️ unshift(0)</button>
+
+                    <button onClick=${() => {
+                        arr().shift();
+                        addLog('✅ arr.shift() 删除第一项');
+                    }} class="danger">➡️ shift()</button>
+
+                    <button onClick=${() => {
+                        arr().reverse();
+                        addLog('✅ arr.reverse() 反转数组');
+                    }}>🔄 reverse()</button>
+
+                    <button onClick=${() => {
+                        arr().sort((a, b) => a - b);
+                        addLog('✅ arr.sort() 排序');
+                    }}>📊 sort()</button>
+
+                    <button onClick=${() => {
+                        arr().splice(1, 1, 999);
+                        addLog('✅ arr.splice(1,1,999) 替换索引1');
+                    }}>✂️ splice()</button>
+                </div>
+
+                <div class="test-box">
+                    <h3>🔧 对象操作</h3>
+                    
+                    <button onClick=${() => {
+                        obj().count++;
+                        addLog(`✅ obj.count++ 现在是 ${obj().count}`);
+                    }}>➕ count++</button>
+
+                    <button onClick=${() => {
+                        obj().count--;
+                        addLog(`✅ obj.count-- 现在是 ${obj().count}`);
+                    }}>➖ count--</button>
+
+                    <button onClick=${() => {
+                        obj().name = obj().name.split('').reverse().join('');
+                        addLog(`✅ 反转 name: ${obj().name}`);
+                    }}>🔄 反转 name</button>
+
+                    <button onClick=${() => {
+                        obj().nested.value *= 2;
+                        addLog(`✅ nested.value *= 2 现在是 ${obj().nested.value}`);
+                    }}>✖️ nested.value *= 2</button>
+
+                    <button onClick=${() => {
+                        obj().newProp = '动态添加';
+                        addLog('✅ 动态添加属性 newProp');
+                    }} class="success">➕ 添加新属性</button>
+                </div>
+
+                <div class="test-box">
+                    <h3>📝 操作日志 (${log().length} 条)</h3>
+                    <div class="display" style="max-height: 200px; overflow-y: auto;">
+                        ${log().length === 0 ? html`<em>暂无操作</em>` : ''}
+                        ${log().map(item => html`<div>${item}</div>`)}
+                    </div>
+                    <button onClick=${() => {
+                        log([]);
+                        addLog('🧹 清空日志');
+                    }} class="danger">🧹 清空日志</button>
+                </div>
+            `;
+        });
+
+        document.getElementById('app').innerHTML = '<mutation-test></mutation-test>';
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>嵌套和插槽测试</title>
+    <script src="reactive-lit.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 40px;
+        }
+        .test-box {
+            border: 2px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>嵌套和插槽测试</h1>
+
+    <h2>测试 1: 数组渲染（动态添加）</h2>
+    <test-array></test-array>
+
+    <h2>测试 2: 嵌套组件</h2>
+    <test-nested></test-nested>
+
+    <h2>测试 3: 插槽内容</h2>
+    <test-slot>
+        <p>这是插槽内容 1</p>
+        <p>这是插槽内容 2</p>
+    </test-slot>
+
+    <script>
+        const { html, createComponent, useState } = window.ReactiveLit;
+
+        // 测试 1: 动态数组
+        createComponent('test-array', () => {
+            const items = useState([1, 2, 3]);
+            
+            return html`
+                <div class="test-box">
+                    <h3>数组项：</h3>
+                    ${items().map(item => html`<p>项目 ${item}</p>`)}
+                    <button onClick=${() => {
+                        console.log('添加前:', items());
+                        items([...items(), items().length + 1]);
+                        console.log('添加后:', items());
+                    }}>添加项目</button>
+                    <button onClick=${() => {
+                        const arr = items();
+                        if (arr.length > 0) {
+                            items(arr.slice(0, -1));
+                        }
+                    }}>删除最后一项</button>
+                </div>
+            `;
+        });
+
+        // 测试 2: 嵌套组件
+        createComponent('test-nested', () => {
+            const show = useState(true);
+            
+            const nestedContent = html`
+                <div style="background: #f0f0f0; padding: 15px; border-radius: 5px;">
+                    <p>这是嵌套的内容</p>
+                </div>
+            `;
+            
+            return html`
+                <div class="test-box">
+                    <button onClick=${() => show(!show())}>
+                        ${show() ? '隐藏' : '显示'}嵌套内容
+                    </button>
+                    ${show() ? nestedContent : html`<p>内容已隐藏</p>`}
+                </div>
+            `;
+        });
+
+        // 测试 3: 插槽
+        createComponent('test-slot', ({ slot }) => {
+            const count = useState(0);
+            
+            return html`
+                <div class="test-box">
+                    <h3>插槽测试 - 点击次数: ${count()}</h3>
+                    <button onClick=${() => count(count() + 1)}>增加计数</button>
+                    <div style="background: #fffacd; padding: 15px; margin-top: 15px; border-radius: 5px;">
+                        <strong>插槽内容：</strong>
+                        ${slot}
+                    </div>
+                </div>
+            `;
+        });
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Simple Test</title>
+    <script src="reactive-lit.js"></script>
+</head>
+<body>
+    <h1>简单测试</h1>
+    
+    <h2>测试 1: 直接使用 API（不用组件）</h2>
+    <div id="test1" style="border: 2px solid red; padding: 20px;"></div>
+    
+    <h2>测试 2: Web Component</h2>
+    <simple-counter></simple-counter>
+
+    <script>
+        console.log('=== 开始测试 ===');
+        
+        // 测试 1: 直接渲染（验证 html 和 render 是否工作）
+        console.log('测试 1: 直接渲染');
+        const { html, render } = window.ReactiveLit;
+        
+        let clickCount = 0;
+        function updateTest1() {
+            const template = html`
+                <div>
+                    <p>点击次数: ${clickCount}</p>
+                    <button onClick=${() => {
+                        console.log('按钮被点击！');
+                        clickCount++;
+                        updateTest1();
+                    }}>点击我</button>
+                </div>
+            `;
+            render(template, document.getElementById('test1'));
+        }
+        updateTest1();
+        console.log('测试 1 渲染完成');
+        
+        // 测试 2: Web Component with useState
+        console.log('测试 2: 创建组件');
+        const { createComponent, useState } = window.ReactiveLit;
+        
+        createComponent('simple-counter', () => {
+            console.log('>>> 组件渲染函数被调用');
+            
+            const count = useState(0);
+            console.log('>>> useState 返回的函数:', count);
+            console.log('>>> 调用 count():', count());
+            
+            const handleClick = () => {
+                console.log('>>> 点击事件触发！');
+                const oldValue = count();
+                console.log('>>> 旧值:', oldValue);
+                count(oldValue + 1);
+                const newValue = count();
+                console.log('>>> 新值:', newValue);
+            };
+            
+            const result = html`
+                <div style="border: 2px solid blue; padding: 20px; margin: 20px;">
+                    <p>计数: ${count()}</p>
+                    <button onClick=${handleClick}>增加</button>
+                </div>
+            `;
+            
+            console.log('>>> 返回模板:', result);
+            return result;
+        });
+        
+        console.log('组件注册完成');
+    </script>
+</body>
+</html>
+

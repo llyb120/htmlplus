@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>批量更新测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #667eea;
+            text-align: center;
+        }
+        .test-box {
+            border: 2px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            background: #f9f9ff;
+        }
+        .stats {
+            background: #fff;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border-left: 4px solid #4caf50;
+        }
+        .stats strong {
+            color: #667eea;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+        .success {
+            background: #4caf50;
+        }
+        .warning {
+            background: #ff9800;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚡ 批量更新测试 (setTimeout(0))</h1>
+        <p style="text-align: center; color: #666;">
+            测试多次连续修改是否被合并为一次渲染
+        </p>
+
+        <div id="app"></div>
+    </div>
+
+    <script src="reactive-lit.js"></script>
+    <script>
+
+        createComponent('batch-test', () => {
+            const count = useState(0);
+            const arr = useState([1, 2, 3]);
+            const obj = useState({ a: 0, b: 0, c: 0 });
+            const renderCount = useState(0);
+
+            // 每次渲染时增加计数
+            renderCount(renderCount() + 1);
+
+            const multipleUpdates = () => {
+                console.log('━━━━━━━━━━━━━━━━━━━━━━');
+                console.log('🔥 开始多次连续更新...');
+                console.time('更新耗时');
+
+                // 连续修改多次
+                count(count() + 1);
+                console.log('  1. count++');
+                
+                count(count() + 1);
+                console.log('  2. count++');
+                
+                count(count() + 1);
+                console.log('  3. count++');
+                
+                obj().a++;
+                console.log('  4. obj.a++');
+                
+                obj().b += 2;
+                console.log('  5. obj.b += 2');
+                
+                obj().c += 3;
+                console.log('  6. obj.c += 3');
+
+                console.timeEnd('更新耗时');
+                console.log('✅ 更新完成，等待批量渲染...');
+                
+                // 验证批量更新
+                setTimeout(() => {
+                    console.log(`📊 最终渲染次数: ${renderCount()}`);
+                    console.log('━━━━━━━━━━━━━━━━━━━━━━');
+                }, 100);
+            };
+
+            const arrayOperations = () => {
+                console.log('━━━━━━━━━━━━━━━━━━━━━━');
+                console.log('🔥 数组连续操作...');
+                console.time('数组操作耗时');
+
+                arr().push(arr().length + 1);
+                console.log('  1. push');
+                
+                arr().push(arr().length + 1);
+                console.log('  2. push');
+                
+                arr().push(arr().length + 1);
+                console.log('  3. push');
+
+                console.timeEnd('数组操作耗时');
+                console.log('✅ 操作完成，等待批量渲染...');
+                
+                setTimeout(() => {
+                    console.log(`📊 最终渲染次数: ${renderCount()}`);
+                    console.log('━━━━━━━━━━━━━━━━━━━━━━');
+                }, 100);
+            };
+
+            const mixedOperations = () => {
+                console.log('━━━━━━━━━━━━━━━━━━━━━━');
+                console.log('🔥 混合操作...');
+                console.time('混合操作耗时');
+
+                count(count() + 5);
+                arr().push(999);
+                obj().a = 100;
+                arr().push(888);
+                obj().b = 200;
+                count(count() + 10);
+
+                console.timeEnd('混合操作耗时');
+                console.log('✅ 操作完成，等待批量渲染...');
+                
+                setTimeout(() => {
+                    console.log(`📊 最终渲染次数: ${renderCount()}`);
+                    console.log('━━━━━━━━━━━━━━━━━━━━━━');
+                }, 100);
+            };
+
+            return html`
+                <div class="test-box">
+                    <h3>📊 当前状态</h3>
+                    
+                    <div class="stats">
+                        <strong>渲染次数:</strong> ${renderCount()} 次
+                        <br>
+                        <strong>计数器:</strong> ${count()}
+                        <br>
+                        <strong>对象:</strong> a=${obj().a}, b=${obj().b}, c=${obj().c}
+                        <br>
+                        <strong>数组:</strong> [${arr().join(', ')}] (${arr().length} 项)
+                    </div>
+                </div>
+
+                <div class="test-box">
+                    <h3>🧪 测试批量更新</h3>
+                    <p style="color: #666; font-size: 14px;">
+                        点击按钮后，多次连续更新应该被合并为一次渲染。
+                        <br>
+                        打开控制台查看详细日志。
+                    </p>
+                    
+                    <button onClick=${multipleUpdates}>
+                        🔥 连续更新 6 次状态
+                    </button>
+                    
+                    <button onClick=${arrayOperations} class="success">
+                        📝 数组连续 push 3 次
+                    </button>
+                    
+                    <button onClick=${mixedOperations} class="warning">
+                        🌀 混合操作 6 次
+                    </button>
+                </div>
+
+                <div class="test-box">
+                    <h3>✅ 预期行为</h3>
+                    <ul style="color: #666;">
+                        <li>每次点击按钮，<strong>渲染次数只增加 1</strong></li>
+                        <li>多次连续修改被合并为一次批量更新</li>
+                        <li>使用 setTimeout(0) 延迟执行，提高效率</li>
+                        <li>控制台会显示操作耗时（应该很快）</li>
+                    </ul>
+                </div>
+            `;
+        });
+
+        document.body.querySelector('#app').innerHTML = '<batch-test></batch-test>';
+        
+        console.log('🎉 页面加载完成');
+        console.log('💡 提示：打开控制台查看详细的批量更新日志');
+    </script>
+</body>
+</html>
+

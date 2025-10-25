@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reactive-Lit 框架演示</title>
+    <title>Reactive-Lit 极简版演示</title>
     <script src="reactive-lit.js"></script>
     <style>
         * {
@@ -37,24 +37,12 @@
         }
         
         .demo-container {
-            max-width: 600px;
+            max-width: 800px;
             margin: 0 auto;
             background: white;
             border-radius: 16px;
             padding: 40px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-        }
-        
-        .demo-section {
-            margin-bottom: 40px;
-        }
-        
-        .demo-section h2 {
-            color: #667eea;
-            margin-bottom: 20px;
-            font-size: 1.5em;
-            border-bottom: 2px solid #667eea;
-            padding-bottom: 10px;
         }
         
         button {
@@ -74,171 +62,120 @@
             transform: translateY(-2px);
             box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
         }
-        
-        button:active {
-            transform: translateY(0);
-        }
-        
-        input[type="text"] {
-            padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 14px;
-            width: 100%;
-            margin: 10px 0;
-            transition: border-color 0.3s;
-        }
-        
-        input[type="text"]:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-        
-        .counter-display {
-            font-size: 4em;
-            font-weight: bold;
-            color: #667eea;
-            text-align: center;
-            margin: 30px 0;
-            text-shadow: 2px 2px 4px rgba(102, 126, 234, 0.2);
-        }
-        
-        .preview-box {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            margin-top: 15px;
-            border-left: 4px solid #667eea;
-        }
-        
-        .preview-box h3 {
-            color: #667eea;
-            margin-bottom: 10px;
-        }
-        
-        .button-group {
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-        
-        .links {
-            text-align: center;
-            margin-top: 30px;
-            padding-top: 30px;
-            border-top: 2px solid #e0e0e0;
-        }
-        
-        .links a {
-            display: inline-block;
-            margin: 0 10px;
-            color: #667eea;
-            text-decoration: none;
-            font-weight: 600;
-            padding: 10px 20px;
-            border: 2px solid #667eea;
-            border-radius: 8px;
-            transition: all 0.3s;
-        }
-        
-        .links a:hover {
-            background: #667eea;
-            color: white;
-            transform: translateY(-2px);
-        }
     </style>
 </head>
 <body>
     <div class="welcome">
-        <h1>🚀 Reactive-Lit</h1>
-        <p>轻量级响应式模板框架</p>
+        <h1>🚀 Reactive-Lit 极简版</h1>
+        <p>useState + 函数式组件</p>
     </div>
 
     <div class="demo-container">
-        <!-- 计数器示例 -->
-        <div class="demo-section">
-            <h2>🔢 响应式计数器</h2>
-            <div id="counter-app"></div>
-        </div>
-
-        <!-- 输入框示例 -->
-        <div class="demo-section">
-            <h2>✍️ 双向数据绑定</h2>
-            <div id="input-app"></div>
-        </div>
-
-        <!-- 链接 -->
-        <div class="links">
-            <a href="examples.html" target="_blank">📚 查看更多示例</a>
-            <a href="README-reactive-lit.md" target="_blank">📖 阅读文档</a>
-        </div>
+        <h2>示例 1: 基础计数器组件</h2>
+        <my-counter></my-counter>
+        
+        <hr style="margin: 40px 0;">
+        
+        <h2>示例 2: 带 Props 的组件</h2>
+        <user-card name="张三" age="25"></user-card>
+        
+        <hr style="margin: 40px 0;">
+        
+        <h2>示例 3: 支持插槽的组件</h2>
+        <card-box title="我的卡片">
+            <p>这是插槽内容！</p>
+            <button>插槽按钮</button>
+            <user-card name="张三" age="25"></user-card>
+        </card-box>
     </div>
 
     <script>
-        // const { html, render, createComponent, createState } = window.ReactiveLit;
+        // 示例 1: 简单计数器
+        createComponent('my-counter', () => {
+            const count = useState(0);
+            const arr = useState([1, 2, 3]);
+            const obj = useState({ a: 1, b: 2 });
 
-        // 计数器示例
-        const counterContainer = document.getElementById('counter-app');
-        createComponent(() => {
-            const [count, setCount] = createState(0);
-            
-            const template = html`
-                <div>
-                    <div class="counter-display">${count()}</div>
-                    <div class="button-group">
-                        <button onClick=${() => setCount(count() - 10)}>-10</button>
-                        <button onClick=${() => setCount(count() - 1)}>-1</button>
-                        <button onClick=${() => setCount(0)}>重置</button>
-                        <button onClick=${() => setCount(count() + 1)}>+1</button>
-                        <button onClick=${() => setCount(count() + 10)}>+10</button>
+            const doClick = () => {
+                arr().push(arr().length + 1);
+            }
+
+            return () => html`
+                <div style="text-align: center; padding: 20px;">
+                    <h3 style="font-size: 3em; color: #667eea;">${count()}</h3>
+                    <h4>obj.a = ${obj().a}, obj.b = ${obj().b}</h4>
+                    <div>数组 (${arr().length} 项):</div>
+                    ${arr().map(item => html`<p>item: ${item}</p>`)}
+                    
+                    <div style="margin-top: 20px;">
+                        <button onClick=${doClick}>📝 arr.push() 添加项</button>
+                        
+                        <button onClick=${() => {
+                            arr().pop();
+                        }}>🗑️ arr.pop() 删除项</button>
+                        
+                        <button onClick=${() => {
+                            obj().a++;
+                        }}>➕ obj.a++</button>
+                        
+                        <button onClick=${() => {
+                            obj().b *= 2;
+                        }}>✖️ obj.b *= 2</button>
                     </div>
-                    <div style="text-align: center; margin-top: 20px; color: #666;">
-                        ${count() === 0 ? '⚖️ 归零' : count() > 0 ? '📈 正数区间' : '📉 负数区间'}
+                    
+                    <div style="margin-top: 20px; border-top: 1px solid #ddd; padding-top: 20px;">
+                        <button onClick=${() => count(count() - 1)}>-1</button>
+                        <button onClick=${() => count(0)}>重置</button>
+                        <button onClick=${() => count(count() + 1)}>+1</button>
                     </div>
                 </div>
             `;
-            
-            render(template, counterContainer);
-        }, counterContainer);
+        });
 
-        // 输入框示例
-        const inputContainer = document.getElementById('input-app');
-        createComponent(() => {
-            const [name, setName] = createState('');
-            const [message, setMessage] = createState('');
+        // 示例 2: 带 Props 的组件（使用解构）
+        createComponent('user-card', ({ name, age }) => {
+            const likes = useState(0);
+            const age2 = useState(age)
+
+            const updateUserInfo = async () => {
+                await new Promise(resolve => setTimeout(resolve, 1000))
+                age2(age2() + 1)
+            }
+
+            console.log('123')
+            updateUserInfo()
             
-            const template = html`
-                <div>
-                    <input 
-                        type="text" 
-                        placeholder="请输入你的名字..."
-                        .value=${name()}
-                        onInput=${(e) => setName(e.target.value)}
-                    />
-                    <input 
-                        type="text" 
-                        placeholder="请输入一条消息..."
-                        .value=${message()}
-                        onInput=${(e) => setMessage(e.target.value)}
-                    />
-                    <div class="preview-box">
-                        <h3>📋 实时预览</h3>
-                        <p><strong>名字：</strong>${name() || '(未填写)'}</p>
-                        <p><strong>消息：</strong>${message() || '(未填写)'}</p>
-                        <p><strong>总字符：</strong>${name().length + message().length} 个</p>
-                        ${name() && message() ? html`
-                            <div style="margin-top: 15px; padding: 15px; background: white; border-radius: 8px; border: 2px dashed #667eea;">
-                                <strong>${name()}</strong> 说：${message()}
-                            </div>
-                        ` : ''}
-                    </div>
+            return () => html`
+                <div style="padding: 20px; background: #f5f5f5; border-radius: 8px; margin: 20px 0;">
+                    <h3>姓名：${name}</h3>
+                    <p>年龄：${age2()}</p>
+                    <input value=${age2()} onInput=${(e) => age2(e.target.value)}>
+                    <p>点赞数：${likes()}</p>
+                    <button onClick=${() => likes(likes() + 1)}>👍 点赞</button>
                 </div>
             `;
+        });
+
+        // 示例 3: 支持插槽的组件
+        createComponent('card-box', ({ title, slot }) => {
+            const isOpen = useState(true);
             
-            render(template, inputContainer);
-        }, inputContainer);
+            return () => html`
+                <div style="border: 2px solid #667eea; border-radius: 8px; padding: 20px; margin: 20px 0;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h3 style="color: #667eea;">${title}</h3>
+                        <button onClick=${() => isOpen(!isOpen())}>
+                            ${isOpen() ? '收起' : '展开'}
+                        </button>
+                    </div>
+                    ${isOpen() ? html`
+                        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">
+                            <div>${slot}</div>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        });
     </script>
 </body>
 </html>
-

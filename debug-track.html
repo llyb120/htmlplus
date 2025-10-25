@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>追踪调试</title>
+    <script src="reactive-lit.js"></script>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1e1e1e;
+            color: #d4d4d4;
+        }
+        .log {
+            background: #2d2d2d;
+            padding: 10px;
+            margin: 5px 0;
+            border-left: 3px solid #007acc;
+            border-radius: 3px;
+        }
+        .error { border-left-color: #f44336; }
+        .success { border-left-color: #4caf50; }
+        .warning { border-left-color: #ff9800; }
+        button {
+            background: #007acc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 响应式追踪调试</h1>
+    <div id="logs"></div>
+    <hr>
+    <div id="app"></div>
+
+    <script>
+        const { html, createComponent, useState } = window.ReactiveLit;
+        
+        const logs = [];
+        function log(message, type = 'log') {
+            const time = new Date().toLocaleTimeString();
+            logs.push({ time, message, type });
+            updateLogs();
+        }
+        
+        function updateLogs() {
+            document.getElementById('logs').innerHTML = logs.map(l => 
+                `<div class="log ${l.type}">[${l.time}] ${l.message}</div>`
+            ).join('');
+        }
+
+        // 拦截 track 和 trigger
+        const originalTrack = window.track;
+        const originalTrigger = window.trigger;
+        
+        window.trackCount = 0;
+        window.triggerCount = 0;
+
+        createComponent('debug-test', () => {
+            log('🎬 组件渲染开始', 'warning');
+            
+            const arr = useState([1, 2, 3]);
+            log(`✅ arr 初始化: [${arr()}]`, 'success');
+            
+            const obj = useState({ a: 1, b: 2 });
+            log(`✅ obj 初始化: ${JSON.stringify(obj())}`, 'success');
+
+            return html`
+                <div>
+                    <h3>数组: [${arr().join(', ')}]</h3>
+                    <h3>对象: a=${obj().a}, b=${obj().b}</h3>
+                    
+                    <button onClick=${() => {
+                        log('🔴 点击 push 按钮', 'warning');
+                        log(`📊 push 前: [${arr()}]`);
+                        
+                        const result = arr().push(999);
+                        
+                        log(`📊 push 后: [${arr()}]`);
+                        log(`✅ push 返回值: ${result}`, 'success');
+                    }}>push(999)</button>
+
+                    <button onClick=${() => {
+                        log('🔵 点击 obj.a++ 按钮', 'warning');
+                        log(`📊 修改前: obj.a = ${obj().a}`);
+                        
+                        obj().a++;
+                        
+                        log(`📊 修改后: obj.a = ${obj().a}`);
+                    }}>obj.a++</button>
+
+                    <button onClick=${() => {
+                        log('🟢 点击 arr 重新赋值按钮', 'warning');
+                        arr([...arr(), 888]);
+                        log(`✅ 重新赋值后: [${arr()}]`, 'success');
+                    }}>arr([...arr(), 888])</button>
+                </div>
+            `;
+        });
+
+        document.getElementById('app').innerHTML = '<debug-test></debug-test>';
+        
+        log('🎉 页面加载完成', 'success');
+    </script>
+</body>
+</html>
+

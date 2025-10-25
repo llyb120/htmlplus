@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>原始响应式测试</title>
+</head>
+<body>
+    <h1>原始响应式测试</h1>
+    <div id="output"></div>
+    <button id="btn1">测试 1: 修改对象属性</button>
+    <button id="btn2">测试 2: 数组 push</button>
+    <button id="btn3">测试 3: 通过 setter</button>
+
+    <script src="reactive-lit.js"></script>
+    <script>
+        const debug = window.__reactive_debug__;
+        const { reactive, effect } = debug;
+
+        const output = document.getElementById('output');
+        function log(msg) {
+            output.innerHTML += `<div>${msg}</div>`;
+        }
+
+        log('开始测试...');
+
+        // 测试 1: 基本对象
+        const obj = reactive({ count: 0 });
+        let effectRun = 0;
+
+        effect(() => {
+            effectRun++;
+            log(`Effect 运行 #${effectRun}, count = ${obj.count}`);
+        });
+
+        document.getElementById('btn1').onclick = () => {
+            log('点击按钮 1: obj.count++');
+            obj.count++;
+        };
+
+        // 测试 2: 数组
+        const state = reactive({ value: [1, 2, 3] });
+        let effectRun2 = 0;
+
+        effect(() => {
+            effectRun2++;
+            log(`Effect2 运行 #${effectRun2}, arr = [${state.value}]`);
+        });
+
+        document.getElementById('btn2').onclick = () => {
+            log('点击按钮 2: state.value.push(999)');
+            state.value.push(999);
+        };
+
+        // 测试 3: 通过 setter
+        let effectRun3 = 0;
+        effect(() => {
+            effectRun3++;
+            log(`Effect3 运行 #${effectRun3}, value = [${state.value}]`);
+        });
+
+        document.getElementById('btn3').onclick = () => {
+            log('点击按钮 3: state.value = [...]');
+            state.value = [...state.value, 888];
+        };
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>简单测试</title>
+</head>
+<body>
+    <h1>简单响应式测试</h1>
+    <div id="app"></div>
+    <div id="log"></div>
+
+    <script src="reactive-lit.js"></script>
+    <script>
+        const { html, createComponent, useState } = window.ReactiveLit;
+        const debug = window.__reactive_debug__;
+
+        const logs = [];
+        function log(msg) {
+            logs.push(msg);
+            document.getElementById('log').innerHTML = logs.map(l => `<div>${l}</div>`).join('');
+        }
+
+        // 拦截 trigger
+        const origTrigger = debug.trigger;
+        debug.trigger = function(target, key) {
+            log(`🔔 trigger 被调用: key="${key}", target=${Array.isArray(target) ? 'Array' : 'Object'}`);
+            return origTrigger.apply(this, arguments);
+        };
+
+        createComponent('simple-test', () => {
+            const count = useState(0);
+            const arr = useState([1, 2]);
+
+            return html`
+                <div>
+                    <h2>Count: ${count()}</h2>
+                    <h2>Arr: [${arr().join(', ')}]</h2>
+                    
+                    <button onClick=${() => {
+                        log('━━━ 点击 count++ ━━━');
+                        count(count() + 1);
+                    }}>count++</button>
+                    
+                    <button onClick=${() => {
+                        log('━━━ 点击 arr.push ━━━');
+                        log(`before push: [${arr()}]`);
+                        arr().push(arr().length + 1);
+                        log(`after push: [${arr()}]`);
+                    }}>arr.push</button>
+                </div>
+            `;
+        });
+
+        document.getElementById('app').innerHTML = '<simple-test></simple-test>';
+    </script>
+</body>
+</html>
+

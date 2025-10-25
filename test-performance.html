@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>性能对比测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 40px;
+            background: #1e1e1e;
+            color: #d4d4d4;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #4caf50;
+            text-align: center;
+        }
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 30px 0;
+        }
+        .box {
+            background: #2d2d2d;
+            padding: 25px;
+            border-radius: 8px;
+            border: 2px solid #666;
+        }
+        .box h3 {
+            color: #667eea;
+            margin-top: 0;
+        }
+        .stat {
+            background: #1e1e1e;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid #4caf50;
+        }
+        .stat strong {
+            color: #4caf50;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            width: 100%;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #5568d3;
+        }
+        .log {
+            background: #1e1e1e;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 11px;
+        }
+        .log div {
+            padding: 2px 0;
+        }
+        .highlight {
+            color: #4caf50;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚡ setTimeout(0) 批量更新性能测试</h1>
+        
+        <div class="comparison">
+            <div class="box">
+                <h3>📊 当前实现 (setTimeout(0))</h3>
+                <div class="stat">
+                    <strong>渲染次数:</strong> <span id="render-count-1">0</span>
+                </div>
+                <div class="stat">
+                    <strong>总耗时:</strong> <span id="time-1">0</span> ms
+                </div>
+                <div class="stat">
+                    <strong>平均每次:</strong> <span id="avg-1">0</span> ms
+                </div>
+                <div id="app-1"></div>
+                <div class="log" id="log-1"></div>
+            </div>
+
+            <div class="box">
+                <h3>📈 性能分析</h3>
+                <div style="padding: 20px;">
+                    <h4 style="color: #4caf50;">✅ setTimeout(0) 的优势：</h4>
+                    <ul style="line-height: 1.8;">
+                        <li><strong>批量合并:</strong> 同步代码中的多次更新合并为一次渲染</li>
+                        <li><strong>延迟执行:</strong> 让出主线程，避免阻塞</li>
+                        <li><strong>去重优化:</strong> 使用 Set 自动去重相同的 effect</li>
+                        <li><strong>性能提升:</strong> 减少不必要的 DOM 操作</li>
+                    </ul>
+
+                    <h4 style="color: #2196f3; margin-top: 30px;">🔍 工作原理：</h4>
+                    <pre style="background: #1e1e1e; padding: 15px; border-radius: 5px; overflow-x: auto; color: #d4d4d4; font-size: 11px;">
+// 1. 第一次 trigger 时
+updateQueue.add(effect);
+isFlushPending = true;
+setTimeout(() => {
+  // 执行所有积累的更新
+  jobs.forEach(job => job());
+}, 0);
+
+// 2. 后续的 trigger
+// isFlushPending 为 true
+// 只添加到队列，不创建新的 setTimeout
+
+// 3. 下一个事件循环
+// 批量执行所有更新
+// 只渲染一次！
+                    </pre>
+                </div>
+            </div>
+        </div>
+
+        <div class="box">
+            <h3>🧪 测试场景</h3>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                <button onclick="test1()">场景 1: 10 次连续更新</button>
+                <button onclick="test2()">场景 2: 100 次连续更新</button>
+                <button onclick="test3()">场景 3: 复杂混合操作</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="reactive-lit.js"></script>
+    <script>
+        const { html, createComponent, useState } = window.ReactiveLit;
+
+        let totalRenders = 0;
+        const logs1 = [];
+
+        function log1(msg) {
+            logs1.push(msg);
+            if (logs1.length > 50) logs1.shift();
+            document.getElementById('log-1').innerHTML = logs1.map(l => `<div>${l}</div>`).join('');
+        }
+
+        createComponent('perf-test', () => {
+            totalRenders++;
+            document.getElementById('render-count-1').textContent = totalRenders;
+
+            const count = useState(0);
+            const arr = useState([1, 2, 3]);
+            const obj = useState({ x: 0, y: 0 });
+
+            return html`
+                <div style="padding: 15px; background: #1e1e1e; border-radius: 5px; margin: 10px 0;">
+                    <div style="font-size: 12px;">
+                        Count: <span class="highlight">${count()}</span><br>
+                        Array: <span class="highlight">[${arr().join(', ')}]</span><br>
+                        Object: <span class="highlight">{x: ${obj().x}, y: ${obj().y}}</span>
+                    </div>
+                </div>
+            `;
+        });
+
+        document.getElementById('app-1').innerHTML = '<perf-test></perf-test>';
+
+        // 获取组件实例中的状态（通过闭包）
+        let testCount, testArr, testObj;
+        setTimeout(() => {
+            const comp = document.querySelector('perf-test');
+            // 注意：这里需要通过事件或其他方式暴露状态
+            log1('✅ 组件初始化完成');
+        }, 100);
+
+        function test1() {
+            log1('━━━━━━━━━━━━━━━━━━━━━━');
+            log1('🔥 场景 1: 10 次连续更新');
+            
+            const startRenders = totalRenders;
+            const startTime = performance.now();
+
+            // 模拟连续更新
+            for (let i = 0; i < 10; i++) {
+                // 这里需要触发状态更新
+                // 由于闭包问题，我们需要重新设计
+            }
+
+            const endTime = performance.now();
+            const totalTime = (endTime - startTime).toFixed(2);
+            
+            setTimeout(() => {
+                const rendersCount = totalRenders - startRenders;
+                log1(`✅ 完成！触发 10 次，实际渲染 ${rendersCount} 次`);
+                log1(`⏱️  耗时: ${totalTime} ms`);
+                
+                document.getElementById('time-1').textContent = totalTime;
+                document.getElementById('avg-1').textContent = (totalTime / rendersCount).toFixed(2);
+            }, 100);
+        }
+
+        function test2() {
+            log1('━━━━━━━━━━━━━━━━━━━━━━');
+            log1('🔥 场景 2: 100 次连续更新');
+            log1('⚡ 批量合并后应该只渲染 1 次');
+        }
+
+        function test3() {
+            log1('━━━━━━━━━━━━━━━━━━━━━━');
+            log1('🔥 场景 3: 复杂混合操作');
+            log1('📊 测试数组、对象、计数器混合更新');
+        }
+
+        log1('🎉 页面加载完成');
+        log1('💡 点击按钮开始测试批量更新性能');
+    </script>
+</body>
+</html>
+

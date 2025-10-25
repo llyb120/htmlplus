@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>新 API 测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 40px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #667eea;
+            text-align: center;
+        }
+        .box {
+            background: white;
+            border: 2px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🆕 新 API 对比测试</h1>
+        
+        <div class="box">
+            <h3>旧写法（兼容）- 直接返回模板</h3>
+            <old-style-component></old-style-component>
+        </div>
+
+        <div class="box">
+            <h3>新写法 - 返回渲染函数</h3>
+            <new-style-component></new-style-component>
+        </div>
+
+        <div class="box">
+            <h3>完整示例 - 带生命周期</h3>
+            <full-example></full-example>
+        </div>
+    </div>
+
+    <script src="reactive-lit.js"></script>
+    <script>
+        const { html, createComponent, useState, onMounted, onUnmounted } = window.ReactiveLit;
+
+        // 旧写法（兼容）：直接返回模板
+        createComponent('old-style-component', () => {
+            const count = useState(0);
+            
+            return html`
+                <div>
+                    <p>计数: ${count()}</p>
+                    <button onClick=${() => count(count() + 1)}>+1</button>
+                    <p style="color: #666; font-size: 12px;">
+                        ⚠️ Setup 每次渲染都会执行（旧行为）
+                    </p>
+                </div>
+            `;
+        });
+
+        // 新写法：返回渲染函数
+        createComponent('new-style-component', () => {
+            console.log('✅ new-style setup 执行（只执行一次）');
+            
+            const count = useState(0);
+            const setupTime = new Date().toLocaleTimeString();
+            
+            // 返回渲染函数
+            return () => html`
+                <div>
+                    <p>计数: ${count()}</p>
+                    <p>Setup 时间: ${setupTime}</p>
+                    <button onClick=${() => count(count() + 1)}>+1</button>
+                    <p style="color: #4caf50; font-size: 12px;">
+                        ✅ Setup 只执行一次（新行为）
+                    </p>
+                </div>
+            `;
+        });
+
+        // 完整示例：带生命周期
+        createComponent('full-example', () => {
+            console.log('🎬 full-example setup 开始');
+            
+            const count = useState(0);
+            const messages = useState([]);
+            let timer = null;
+            
+            onMounted(() => {
+                console.log('✅ full-example mounted');
+                messages([...messages(), '✅ 组件已挂载']);
+                
+                // 启动定时器
+                timer = setInterval(() => {
+                    count(count() + 1);
+                }, 3000);
+            });
+            
+            onUnmounted(() => {
+                console.log('❌ full-example unmounted');
+                
+                // 清理定时器
+                if (timer) {
+                    clearInterval(timer);
+                    console.log('🛑 定时器已清理');
+                }
+            });
+            
+            console.log('📝 full-example setup 完成');
+            
+            return () => html`
+                <div style="background: #f0f0f0; padding: 15px; border-radius: 5px;">
+                    <p><strong>自动计数:</strong> ${count()} (每 3 秒 +1)</p>
+                    <button onClick=${() => count(0)}>重置</button>
+                    <button onClick=${() => {
+                        messages([...messages(), `手动操作 @ ${new Date().toLocaleTimeString()}`]);
+                    }}>添加消息</button>
+                    
+                    <div style="margin-top: 15px;">
+                        <strong>消息列表:</strong>
+                        ${messages().map(msg => html`<div style="font-size: 12px; color: #666;">• ${msg}</div>`)}
+                    </div>
+                </div>
+            `;
+        });
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>ParentMap 测试</title>
+    <style>
+        body { font-family: monospace; padding: 20px; }
+        .log { background: #f5f5f5; padding: 5px; margin: 2px 0; }
+        button { padding: 10px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>ParentMap 测试</h1>
+    <div id="app"></div>
+    <div id="log"></div>
+
+    <script src="reactive-lit.js"></script>
+    <script>
+        const { html, createComponent, useState } = window.ReactiveLit;
+        const debug = window.__reactive_debug__;
+
+        const logs = [];
+        function log(msg) {
+            logs.push(msg);
+            document.getElementById('log').innerHTML = logs.map(l => `<div class="log">${l}</div>`).join('');
+        }
+
+        createComponent('test-comp', () => {
+            const arr = useState([1, 2, 3]);
+            
+            const handlePush = () => {
+                log('━━━━━━━━━━━━━━━━━━━━━━');
+                log('📌 点击 push 按钮');
+                
+                const arrValue = arr();
+                log(`1. arr() 返回: [${arrValue}]`);
+                log(`2. 是否响应式: ${arrValue.__isReactive}`);
+                
+                // 获取原始对象
+                const raw = arrValue.__raw;
+                log(`3. raw 对象: ${raw}`);
+                
+                // 检查 parentMap
+                const parentInfo = debug.parentMap.get(raw);
+                log(`4. parentMap.get(raw): ${parentInfo ? JSON.stringify(Object.keys(parentInfo)) : 'null'}`);
+                
+                if (parentInfo) {
+                    log(`   - parentKey: ${parentInfo.parentKey}`);
+                    log(`   - parentTarget 类型: ${parentInfo.parentTarget.constructor.name}`);
+                }
+                
+                log('5. 调用 push(999)...');
+                arrValue.push(999);
+                log(`6. push 后: [${arrValue}]`);
+            };
+
+            return html`
+                <div>
+                    <h2>Arr: [${arr().join(', ')}]</h2>
+                    <button onClick=${handlePush}>Push</button>
+                </div>
+            `;
+        });
+
+        document.getElementById('app').innerHTML = '<test-comp></test-comp>';
+        
+        setTimeout(() => {
+            log('🎉 初始化完成');
+        }, 100);
+    </script>
+</body>
+</html>
+
