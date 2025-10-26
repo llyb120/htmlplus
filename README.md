@@ -7,9 +7,9 @@
 
 ## ✨ 特性
 
-- 🎯 **极简 API**: 仅需掌握 `useState`、`createComponent`、`html` 三个核心 API
+- 🎯 **极简 API**: 有手就会，仅需掌握 `useState`、`createComponent`、`html` 三个核心 API
 - ⚡ **轻量化**: gzip后代码仅有10k，无依赖，开箱即用
-- ⚡ **高性能**: 每个自定义组件仅渲染一次，无React开销
+- ⚡ **高性能**: 每个自定义组件仅渲染一次，无React循环执行和diff开销
 - 🎭 **无Virtual DOM**: 在不使用virtual dom的情况下，也能得知差异做最小粒度的dom变更
 - 🧩 **Web Components**: 基于标准 Web Components，天然支持组件化
 - 📦 **兼容JSX**: 支持模板字符串 `html``` 和 JSX 两种写法
