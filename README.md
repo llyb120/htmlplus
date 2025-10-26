@@ -27,7 +27,7 @@ HTML+ 回归html的本质，致力于让每个人都享受到编码的乐趣！
 ```html
 <script src="htmlp.js"></script>
 <script>
-  const { createComponent, html, useState } = window.Lv;
+  const { createComponent, html, useState } = window.htmlplus;
   // 开始使用
 </script>
 ```
@@ -50,7 +50,7 @@ HTML+ 没有react繁琐的学习周期和坑，你只需要掌握三个函数(cr
     <my-counter></my-counter>
 
     <script>
-        const { createComponent, html, useState } = window.Lv;
+        const { createComponent, html, useState } = window.htmlplus;
 
         // 创建组件
         createComponent('my-counter', () => {
@@ -511,7 +511,7 @@ createComponent('conditional-demo', () => {
 </script>
 
 <script type="text/babel" data-plugins="jsx-to-html">
-    const { createComponent, useState } = window.Lv;
+    const { createComponent, useState } = window.htmlplus;
 
     createComponent('jsx-counter', () => {
         const count = useState(0);
