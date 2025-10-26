@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lv.js 极简版演示</title>
-    <script src="lv.js" ></script>
+    <title>HTML+ 极简版演示</title>
+    <script src="htmlp.js" ></script>
     <style>
         * {
             margin: 0;
@@ -66,7 +66,7 @@
 </head>
 <body>
     <div class="welcome">
-        <h1>🚀 Lv.js 极简版</h1>
+        <h1>🚀 HTML+ 极简版</h1>
         <p>useState + 函数式组件</p>
     </div>
 
@@ -95,7 +95,7 @@
     </div>
 
     <script>
-        const { createComponent, html, useState, onUnmounted } = window.Lv;
+        const { createComponent, html, useState, onUnmounted } = window.htmlplus;
         // 示例 1: 简单计数器
         createComponent('my-counter', () => {
             const count = useState(0);

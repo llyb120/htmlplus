@@ -1,8 +1,8 @@
 {
-  "name": "reactive-lit",
+  "name": "html+",
   "version": "1.0.0",
   "description": "极简响应式模板框架，支持 JSX",
-  "main": "reactive-lit.js",
+  "main": "htmlp.js",
   "type": "module",
   "scripts": {
     "build": "node build.mjs",

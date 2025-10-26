@@ -1,14 +1,14 @@
-# Lv.js 
+# HTML+ 
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Version](https://img.shields.io/badge/version-1.0.0-green.svg)]()
 
 > 🚀 一个极简的响应式模板框架，基于 Web Components，支持 JSX 和模板字符串
 
-## 开发Lv.js的初衷
+## 开发HTML+的初衷
 React的学习曲线过于陡峭，新手和老手写出的代码完全不一样，上限和下限差别极大
 
-Lv.js 致力于让每个人都享受到编码的乐趣！
+HTML+ 回归html的本质，致力于让每个人都享受到编码的乐趣！
 
 ## ✨ 特性
 
@@ -25,7 +25,7 @@ Lv.js 致力于让每个人都享受到编码的乐趣！
 
 ### 直接引入（推荐快速开始）
 ```html
-<script src="lv.js"></script>
+<script src="htmlp.js"></script>
 <script>
   const { createComponent, html, useState } = window.Lv;
   // 开始使用
@@ -33,7 +33,7 @@ Lv.js 致力于让每个人都享受到编码的乐趣！
 ```
 
 ## 🚀 快速开始
-Lv.js 没有react繁琐的学习周期和坑，你只需要掌握三个函数(createComponent, useState, html)，即可上手开发。
+HTML+ 没有react繁琐的学习周期和坑，你只需要掌握三个函数(createComponent, useState, html)，即可上手开发。
 
 ### 第一个组件：计数器
 
@@ -42,8 +42,8 @@ Lv.js 没有react繁琐的学习周期和坑，你只需要掌握三个函数(cr
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>我的第一个 Lv.js 应用</title>
-    <script src="lv.js"></script>
+    <title>我的第一个 HTML+ 应用</title>
+    <script src="htmlp.js"></script>
 </head>
 <body>
     <!-- 使用组件 -->
@@ -72,7 +72,7 @@ Lv.js 没有react繁琐的学习周期和坑，你只需要掌握三个函数(cr
 ```
 
 就是这么简单！只需要：
-1. 引入 `lv.js`
+1. 引入 `htmlp.js`
 2. 使用 `createComponent` 创建组件
 3. 在 HTML 中使用自定义标签
 
@@ -119,7 +119,7 @@ user().age = 20;  // 自动触发更新！
 
 #### 响应式原理
 
-Lv.js 使用 **Proxy** 实现深度响应式：
+HTML+ 使用 **Proxy** 实现深度响应式：
 
 - **自动追踪**: 渲染函数中访问状态时，自动建立依赖关系
 - **精准更新**: 状态变化时，只更新使用该状态的 DOM 节点
@@ -421,7 +421,7 @@ createComponent('lifecycle-demo', () => {
 ```javascript
 createComponent('todo-list', () => {
     const todos = useState([
-        { id: 1, text: '学习 Lv.js', done: false },
+        { id: 1, text: '学习 HTML+', done: false },
         { id: 2, text: '编写示例', done: false }
     ]);
     
@@ -497,12 +497,12 @@ createComponent('conditional-demo', () => {
 
 ### Level 5: JSX 语法（可选）
 
-如果你更喜欢 JSX 语法，Lv.js 也完全支持！
+如果你更喜欢 JSX 语法，HTML+ 也完全支持！
 
 #### 在浏览器中使用（开发模式）
 
 ```html
-<script src="lv.js"></script>
+<script src="htmlp.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <script src="./babel-plugin-jsx-to-html.brower.js"></script>
 
@@ -915,7 +915,7 @@ JSX / html``
 
 ### 适用场景
 
-**✅ 推荐使用 Lv.js：**
+**✅ 推荐使用 HTML+：**
 - 小型项目、原型开发
 - 不需要复杂工具链
 - 希望快速上手

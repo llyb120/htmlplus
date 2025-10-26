@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
-    <script src="lv.js"></script>
+    <script src="htmlp.js"></script>
 </head>
 
 <body>
@@ -13,7 +13,7 @@
         <todo-app></todo-app>
     </div>
     <script>
-        const { createComponent, html, useState } = window.Lv;
+        const { createComponent, html, useState } = window.htmlplus;
         createComponent('todo-app', () => {
     const todos = useState([]);
     const filter = useState('all'); // all, active, completed
