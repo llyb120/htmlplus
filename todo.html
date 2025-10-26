@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="lv.js"></script>
+</head>
+
+<body>
+    <div>
+        <todo-app></todo-app>
+    </div>
+    <script>
+        const { createComponent, html, useState } = window.Lv;
+        createComponent('todo-app', () => {
+    const todos = useState([]);
+    const filter = useState('all'); // all, active, completed
+    const inputValue = useState('');
+    
+    const addTodo = () => {
+        const text = inputValue().trim();
+        if (text) {
+            todos([...todos(), {
+                id: Date.now(),
+                text,
+                completed: false
+            }]);
+            inputValue('');
+        }
+    };
+    
+    const toggleTodo = (id) => {
+        const todo = todos().find(t => t.id === id);
+        if (todo) todo.completed = !todo.completed;
+    };
+    
+    const deleteTodo = (id) => {
+        todos(todos().filter(t => t.id !== id));
+    };
+    
+    const filteredTodos = () => {
+        const list = todos();
+        if (filter() === 'active') return list.filter(t => !t.completed);
+        if (filter() === 'completed') return list.filter(t => t.completed);
+        return list;
+    };
+    
+    const clearCompleted = () => {
+        todos(todos().filter(t => !t.completed));
+    };
+    
+    return () => html`
+        <div class="todo-app">
+            <h1>待办事项</h1>
+            
+            <div class="input-box">
+                <input 
+                    type="text"
+                    value=${inputValue()}
+                    onInput=${(e) => inputValue(e.target.value)}
+                    onKeyPress=${(e) => e.key === 'Enter' && addTodo()}
+                    placeholder="输入待办事项..."
+                >
+                <button onClick=${addTodo}>添加</button>
+            </div>
+            
+            <div class="filters">
+                <button 
+                    class=${{ active: filter() === 'all' }}
+                    onClick=${() => filter('all')}
+                >
+                    全部
+                </button>
+                <button 
+                    class=${{ active: filter() === 'active' }}
+                    onClick=${() => filter('active')}
+                >
+                    进行中
+                </button>
+                <button 
+                    class=${{ active: filter() === 'completed' }}
+                    onClick=${() => filter('completed')}
+                >
+                    已完成
+                </button>
+            </div>
+            
+            <ul class="todo-list">
+                ${filteredTodos().map(todo => html`
+                    <li class=${{ completed: todo.completed }}>
+                        <input 
+                            type="checkbox"
+                            checked=${todo.completed}
+                            onChange=${() => toggleTodo(todo.id)}
+                        >
+                        <span>${todo.text}</span>
+                        <button onClick=${() => deleteTodo(todo.id)}>删除</button>
+                    </li>
+                `)}
+            </ul>
+            
+            <div class="footer">
+                <span>${todos().filter(t => !t.completed).length} 项待完成</span>
+                <button onClick=${clearCompleted}>清除已完成</button>
+            </div>
+        </div>
+    `;
+});
+    </script>
+</body>
+
+</html>

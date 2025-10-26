@@ -111,7 +111,7 @@
                     <h3 style="font-size: 3em; color: #667eea;">${count()}</h3>
                     <h4>obj.a = ${obj().a}, obj.b = ${obj().b}</h4>
                     <div>数组 (${arr().length} 项):</div>
-                    ${arr().map(item => `<p>item: ${item}</p>`)}
+                    ${arr().map(item => html`<p>item: ${item}</p>`)}
                     
                     <div style="margin-top: 20px;">
                         <button onClick=${doClick}>📝 arr.push() 添加项</button>
@@ -165,7 +165,7 @@
                         flag() ? html`<tick-div></tick-div>` : ''
                     }
 
-                    <button onClick=${() => flag(!flag())}>${flag()?'卸载计时器':'挂w载计时器'}</button>
+                    <button onClick=${() => flag(!flag())}>${flag()?'卸载计时器':'挂载计时器'}</button>
                 </div>
             `;
         });
@@ -201,7 +201,7 @@
                             ${isOpen() ? '收起' : '展开'}
                         </button>
                     </div>
-                    ${isOpen() ? `
+                    ${isOpen() ? html`
                         <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">
                             <div>${slot()}</div>
                         </div>

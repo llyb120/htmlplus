@@ -5,6 +5,10 @@
 
 > 🚀 一个极简的响应式模板框架，基于 Web Components，支持 JSX 和模板字符串
 
+## 开发Lv.js的初衷
+React的学习曲线过于陡峭，新手和老手写出的代码完全不一样，上限和下限差别极大
+Lv.js 致力于让每个人都享受到编码的乐趣！
+
 ## ✨ 特性
 
 - 🎯 **极简 API**: 有手就会，仅需掌握 `useState`、`createComponent`、`html` 三个核心 API
