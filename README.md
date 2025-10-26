@@ -35,6 +35,8 @@ HTML+ 回归html的本质，致力于让每个人都享受到编码的乐趣！
 ## 🚀 快速开始
 HTML+ 没有react繁琐的学习周期和坑，你只需要掌握三个函数(createComponent, useState, html)，即可上手开发。
 
+*忘掉hook，指令，回归html的本质，你只要记得你在书写html，它会智能更新即可*
+
 ### 第一个组件：计数器
 
 ```html
