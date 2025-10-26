@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>JSX 测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .component-box {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎉 JSX 语法测试</h1>
+        
+        <div class="component-box">
+            <jsx-counter></jsx-counter>
+        </div>
+        
+        <div class="component-box">
+            <jsx-list></jsx-list>
+        </div>
+        
+        <div class="component-box">
+            <jsx-lifecycle></jsx-lifecycle>
+        </div>
+        
+        <div class="component-box">
+            <jsx-buttons></jsx-buttons>
+        </div>
+        
+        <div class="component-box">
+            <jsx-conditional></jsx-conditional>
+        </div>
+        
+        <div class="component-box">
+            <jsx-form></jsx-form>
+        </div>
+    </div>
+
+    <script src="lv.js"></script>
+    
+    <!-- 使用 Babel Standalone 进行客户端编译（仅用于开发测试） -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="./babel-plugin-jsx-to-html.brower.js"></script>
+    
+    <script>
+        // 使用 Babel.registerPlugin 注册插件
+        Babel.registerPlugin('jsx-to-html', jsxToHtmlPlugin);
+    </script>
+    
+    <script type="text/babel" data-plugins="jsx-to-html">
+        const { html,createComponent, useState, onMounted, onUnmounted } = window.Lv;
+
+        // 示例 1: 简单计数器
+        createComponent('jsx-counter', () => {
+          const count = useState(0);
+          
+          return () => (
+            <div style={{ textAlign: 'center', padding: '20px' }}>
+              <h2>JSX 计数器</h2>
+              <p style={{ fontSize: '3em', color: '#667eea' }}>{count()}</p>
+              <button onClick={() => count(count() - 1)}>-1</button>
+              <button onClick={() => count(0)}>重置</button>
+              <button onClick={() => count(count() + 1)}>+1</button>
+            </div>
+          );
+        });
+
+        // 示例 2: 列表渲染
+        createComponent('jsx-list', () => {
+          const items = useState([1, 2, 3]);
+          
+          const addItem = () => {
+            items([...items(), items().length + 1]);
+          };
+          
+          const removeItem = () => {
+            items(items().slice(0, -1));
+          };
+          
+          return () => (
+            <div style={{ padding: '20px' }}>
+              <h3>列表 ({items().length} 项)</h3>
+              <div>
+                {items().map(item => (
+                  <div key={item} style={{ 
+                    padding: '10px', 
+                    margin: '5px', 
+                    background: '#f0f0f0',
+                    borderRadius: '5px'
+                  }}>
+                    项目 #{item}
+                  </div>
+                ))}
+              </div>
+              <button onClick={addItem}>➕ 添加</button>
+              <button onClick={removeItem}>➖ 删除</button>
+            </div>
+          );
+        });
+
+        // 示例 3: 带生命周期的组件
+        createComponent('jsx-lifecycle', () => {
+          const message = useState('等待中...');
+          let timer;
+          
+          onMounted(() => {
+            message('组件已挂载');
+            timer = setInterval(() => {
+              message(`时间: ${new Date().toLocaleTimeString()}`);
+            }, 1000);
+          });
+          
+          onUnmounted(() => {
+            if (timer) clearInterval(timer);
+          });
+          
+          return () => (
+            <div style={{ padding: '20px', background: '#e3f2fd', borderRadius: '8px' }}>
+              <h3>生命周期示例</h3>
+              <p>{message()}</p>
+            </div>
+          );
+        });
+
+        // 示例 4: 按钮组件
+        createComponent('jsx-buttons', () => {
+          const count = useState(0);
+          
+          return () => (
+            <div style={{ padding: '20px' }}>
+              <h3>按钮示例</h3>
+              <p>计数: {count()}</p>
+            <button 
+                onClick={() => count(count() + 1)}
+              style={{
+                  background: '#667eea',
+                color: 'white',
+                border: 'none',
+                padding: '10px 20px',
+                borderRadius: '5px',
+                cursor: 'pointer',
+                margin: '5px'
+              }}
+            >
+                增加
+              </button>
+              <button 
+                onClick={() => count(count() - 1)}
+                style={{
+                  background: '#f44336',
+                  color: 'white',
+                  border: 'none',
+                  padding: '10px 20px',
+                  borderRadius: '5px',
+                  cursor: 'pointer',
+                  margin: '5px'
+                }}
+              >
+                减少
+              </button>
+              <button 
+                onClick={() => count(0)}
+                style={{
+                  background: '#4caf50',
+                  color: 'white',
+                  border: 'none',
+                  padding: '10px 20px',
+                  borderRadius: '5px',
+                  cursor: 'pointer',
+                  margin: '5px'
+                }}
+              >
+                重置
+              </button>
+            </div>
+          );
+        });
+
+        // 示例 5: Fragment (已移除，因为没有使用)
+        
+        // 示例 6: 条件渲染
+        createComponent('jsx-conditional', () => {
+          const show = useState(true);
+          const mode = useState('light');
+          
+          return () => (
+            <div style={{ padding: '20px' }}>
+              <h3>条件渲染</h3>
+              
+              <button onClick={() => show(!show())}>
+                {show() ? '隐藏' : '显示'}
+              </button>
+              
+              <button onClick={() => mode(mode() === 'light' ? 'dark' : 'light')}>
+                切换主题
+              </button>
+              
+              {show() && (
+                <div style={{
+                  padding: '20px',
+                  margin: '10px 0',
+                  background: mode() === 'light' ? '#f5f5f5' : '#333',
+                  color: mode() === 'light' ? '#333' : '#f5f5f5',
+                  borderRadius: '5px'
+                }}>
+                  当前主题: {mode()}
+                </div>
+              )}
+            </div>
+          );
+        });
+
+        // 示例 7: 表单输入
+        createComponent('jsx-form', () => {
+          const name = useState('');
+          const email = useState('');
+          
+          const handleSubmit = (e) => {
+            e.preventDefault();
+            alert(`姓名: ${name()}, 邮箱: ${email()}`);
+          };
+          
+          return () => (
+            <div style={{ padding: '20px' }}>
+              <h3>表单示例</h3>
+              <form onSubmit={handleSubmit}>
+                <div style={{ marginBottom: '10px' }}>
+                  <label>
+                    姓名:
+                    <input 
+                      type="text" 
+                      value={name()}
+                      onInput={(e) => name(e.target.value)}
+                      style={{ marginLeft: '10px', padding: '5px' }}
+                    />
+                  </label>
+                </div>
+                
+                <div style={{ marginBottom: '10px' }}>
+                  <label>
+                    邮箱:
+                    <input 
+                      type="email" 
+                      value={email()}
+                      onInput={(e) => email(e.target.value)}
+                      style={{ marginLeft: '10px', padding: '5px' }}
+                    />
+                  </label>
+                </div>
+                
+                <button type="submit">提交</button>
+              </form>
+              
+              <div style={{ marginTop: '20px', padding: '10px', background: '#f0f0f0' }}>
+                <p>姓名: {name()}</p>
+                <p>邮箱: {email()}</p>
+              </div>
+            </div>
+          );
+        });
+    </script>
+</body>
+</html>
+

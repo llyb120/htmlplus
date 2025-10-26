@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reactive-Lit 极简版演示</title>
-    <script src="reactive-lit.js"></script>
+    <title>Lv.js 极简版演示</title>
+    <script src="lv.js" ></script>
     <style>
         * {
             margin: 0;
@@ -66,7 +66,7 @@
 </head>
 <body>
     <div class="welcome">
-        <h1>🚀 Reactive-Lit 极简版</h1>
+        <h1>🚀 Lv.js 极简版</h1>
         <p>useState + 函数式组件</p>
     </div>
 
@@ -87,9 +87,15 @@
             <button>插槽按钮</button>
             <user-card name="张三" age="25"></user-card>
         </card-box>
+
+        <ok-box>
+            <p>这是插槽内容！</p>
+            <strong>测试 Slot</strong>
+        </ok-box>
     </div>
 
     <script>
+        const { createComponent, html, useState, onUnmounted } = window.Lv;
         // 示例 1: 简单计数器
         createComponent('my-counter', () => {
             const count = useState(0);
@@ -105,7 +111,7 @@
                     <h3 style="font-size: 3em; color: #667eea;">${count()}</h3>
                     <h4>obj.a = ${obj().a}, obj.b = ${obj().b}</h4>
                     <div>数组 (${arr().length} 项):</div>
-                    ${arr().map(item => html`<p>item: ${item}</p>`)}
+                    ${arr().map(item => `<p>item: ${item}</p>`)}
                     
                     <div style="margin-top: 20px;">
                         <button onClick=${doClick}>📝 arr.push() 添加项</button>
@@ -135,7 +141,7 @@
         // 示例 2: 带 Props 的组件（使用解构）
         createComponent('user-card', ({ name, age }) => {
             const likes = useState(0);
-            const age2 = useState(age)
+            const age2 = useState(age())  // age 也是函数
 
             const updateUserInfo = async () => {
                 await new Promise(resolve => setTimeout(resolve, 1000))
@@ -149,7 +155,7 @@
             
             return () => html`
                 <div style="padding: 20px; background: #f5f5f5; border-radius: 8px; margin: 20px 0;">
-                    <h3>姓名：${name}</h3>
+                    <h3>姓名：${name()}</h3>
                     <p>年龄：${age2()}</p>
                     <input value=${age2()} onInput=${(e) => age2(e.target.value)}>
                     <p>点赞数：${likes()}</p>
@@ -159,7 +165,7 @@
                         flag() ? html`<tick-div></tick-div>` : ''
                     }
 
-                    <button onClick=${() => flag(!flag())}>${flag()?'卸载计时器':'挂载计时器'}</button>
+                    <button onClick=${() => flag(!flag())}>${flag()?'卸载计时器':'挂w载计时器'}</button>
                 </div>
             `;
         });
@@ -190,19 +196,68 @@
             return () => html`
                 <div style="border: 2px solid #667eea; border-radius: 8px; padding: 20px; margin: 20px 0;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <h3 style="color: #667eea;">${title}</h3>
+                        <h3 style="color: #667eea;">${title()}</h3>
                         <button onClick=${() => isOpen(!isOpen())}>
                             ${isOpen() ? '收起' : '展开'}
                         </button>
                     </div>
-                    ${isOpen() ? html`
+                    ${isOpen() ? `
                         <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">
-                            <div>${slot}</div>
+                            <div>${slot()}</div>
                         </div>
                     ` : ''}
                 </div>
             `;
         });
+
+
+        createComponent("ok-box", ({slot}) => {
+            const a = useState(1)
+            const b = ({
+                a:1,b:2
+            })
+            const deep = useState({
+                a:{
+                    b:{
+                        c:3
+                    }
+                }
+            })
+            return () => {
+                console.log("slot is", slot, typeof slot)
+                return html`
+                <div>hi ${a()} ${slot()}</div>
+                <div>deep.a.b.c = ${deep().a.b.c}</div>
+                <little-box ok=${a} ok2=${b}></little-box>
+
+                <button onclick=${() => {
+                    // alert(2)
+                    a(a() + 1)}}>增加a</button>
+                <button onclick=${() => {
+                        deep().a.b.c++
+                    }}>增加deep.a.b.c</button>
+            `}
+        })
+
+        createComponent("little-box", ({ok, ok2}) => {
+            return () => {
+                console.log("ok is", ok, typeof ok)
+                console.log("ok2 is", ok2, typeof ok2)
+                
+                // ok 和 ok2 现在都是函数（自动包装）
+                // const okValue = typeof ok === 'function' ? ok() : ok;
+                // const ok2Value = typeof ok2 === 'function' ? ok2() : ok2;
+                
+                return html`
+                <div style="padding: 10px; background: #f0f0f0; margin: 10px 0;">
+                    <h4>little-box 组件</h4>
+                    <p>ok 值: ${ok()}</p>
+                    <p>ok2.a: ${ok2()?.a}</p>
+                    <p>ok2.b: ${ok2()?.b}</p>
+                </div>
+            `}
+        })
     </script>
+
 </body>
 </html>

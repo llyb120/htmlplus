@@ -1,0 +1,26 @@
+{
+  "name": "reactive-lit",
+  "version": "1.0.0",
+  "description": "极简响应式模板框架，支持 JSX",
+  "main": "reactive-lit.js",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "build:watch": "node build.mjs --watch",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "reactive",
+    "template",
+    "jsx",
+    "web-components"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@babel/cli": "^7.23.0",
+    "@babel/core": "^7.23.0",
+    "@babel/plugin-syntax-jsx": "^7.27.1",
+    "@babel/preset-react": "^7.23.0"
+  }
+}
