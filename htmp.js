@@ -711,11 +711,13 @@
             const value = this.value;
 
             if (this.name === 'node') {
+                // 快速类型检查（避免重复调用 instanceof 和 _isHTMLString）
+                const isUnsafeHTML = value instanceof UnsafeHTML;
+                const isTemplateResult = value instanceof TemplateResult;
+                const isArray = Array.isArray(value);
+                
                 // 如果是文本节点，需要升级为元素节点（用于复杂内容）
-                const needsContainer = value instanceof UnsafeHTML ||
-                    value instanceof TemplateResult ||
-                    Array.isArray(value) ||
-                    this._isHTMLString(value);
+                const needsContainer = isUnsafeHTML || isTemplateResult || isArray || this._isHTMLString(value);
 
                 if (needsContainer && this.node.nodeType === Node.TEXT_NODE) {
                     const span = document.createElement('span');
@@ -724,9 +726,13 @@
                 }
 
                 // 支持 UnsafeHTML
-                if (value instanceof UnsafeHTML) {
+                if (isUnsafeHTML) {
                     this.node.innerHTML = value.html;
-                } else if (value instanceof TemplateResult) {
+                    // 清理旧的模板实例（innerHTML 会清空内容，需要清理实例引用）
+                    if (this.node._templateInstance) {
+                        delete this.node._templateInstance;
+                    }
+                } else if (isTemplateResult) {
                     // 支持嵌套的 TemplateResult
                     // 如果已存在实例且模板结构相同，直接更新 values
                     if (this.node._templateInstance && this.node._templateInstance.template.strings === value.strings) {
@@ -737,16 +743,28 @@
                         delete this.node._templateInstance;
                         render(value, this.node);
                     }
-                } else if (Array.isArray(value)) {
+                } else if (isArray) {
                     // 支持数组（特别是 TemplateResult 数组）
                     // 使用智能 diff 算法，最小化 DOM 操作
                     this._updateArray(value);
-                } else if (this._isHTMLString(value)) {
-                    // HTML 字符串 - 直接使用 innerHTML
-                    this.node.innerHTML = value;
                 } else {
-                    // 普通值
-                    this.node.textContent = value == null ? '' : value;
+                    // HTML 字符串或普通文本
+                    // 优化：只有当之前是 TemplateResult 时才需要清理实例
+                    const hadTemplateInstance = this.node._templateInstance;
+                    
+                    // 使用之前的 needsContainer 判断结果，避免重复调用 _isHTMLString
+                    if (needsContainer) {
+                        // HTML 字符串 - 直接使用 innerHTML
+                        this.node.innerHTML = value;
+                    } else {
+                        // 普通值
+                        this.node.textContent = value == null ? '' : value;
+                    }
+                    
+                    // 统一清理：只在必要时执行 delete 操作
+                    if (hadTemplateInstance) {
+                        delete this.node._templateInstance;
+                    }
                 }
             } else if (this.name.toLowerCase().startsWith('on')) {
                 // 处理 onClick -> click, onChange -> change, onclick -> click

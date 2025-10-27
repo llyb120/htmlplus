@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>性能测试 - commit() 优化</title>
+    <script src="htmp.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; background: #667eea; color: white; border: none; border-radius: 4px; }
+        button:hover { background: #5568d3; }
+        .log { background: #f0f0f0; padding: 10px; margin: 10px 0; font-family: monospace; font-size: 12px; max-height: 400px; overflow-y: auto; }
+        .result { padding: 10px; margin: 5px 0; border-left: 4px solid #667eea; background: #f8f9fa; }
+        .result.fast { border-color: #28a745; }
+        .result.slow { border-color: #dc3545; }
+    </style>
+</head>
+<body>
+    <h1>性能测试：commit() 方法优化</h1>
+    
+    <div class="test-section">
+        <h2>测试1: 条件渲染切换（展开/收起）</h2>
+        <p>测试 TemplateResult ⇔ 空字符串 的切换性能</p>
+        <button onclick="runToggleTest()">运行测试 (1000次切换)</button>
+        <div id="toggle-result"></div>
+        <test-toggle></test-toggle>
+    </div>
+
+    <div class="test-section">
+        <h2>测试2: 频繁的文本更新</h2>
+        <p>测试普通文本值的更新性能（不涉及 _templateInstance 清理）</p>
+        <button onclick="runTextUpdateTest()">运行测试 (10000次更新)</button>
+        <div id="text-result"></div>
+        <test-text></test-text>
+    </div>
+
+    <div class="test-section">
+        <h2>测试3: 混合内容切换</h2>
+        <p>测试在 TemplateResult、HTML字符串、普通文本之间切换</p>
+        <button onclick="runMixedTest()">运行测试 (1000次混合切换)</button>
+        <div id="mixed-result"></div>
+        <test-mixed></test-mixed>
+    </div>
+
+    <div class="log" id="log"></div>
+
+    <script>
+        const { createComponent, html, useState } = window.htmp;
+
+        function log(msg) {
+            const logDiv = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${time}] ${msg}<br>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function showResult(elementId, testName, duration, ops) {
+            const resultDiv = document.getElementById(elementId);
+            const opsPerSec = Math.round(ops / (duration / 1000));
+            const avgTime = (duration / ops).toFixed(3);
+            const speed = duration < 50 ? 'fast' : duration < 200 ? '' : 'slow';
+            
+            resultDiv.innerHTML = `
+                <div class="result ${speed}">
+                    <strong>${testName}</strong><br>
+                    总耗时: ${duration.toFixed(2)}ms<br>
+                    平均耗时: ${avgTime}ms/次<br>
+                    吞吐量: ${opsPerSec.toLocaleString()} ops/s
+                </div>
+            `;
+        }
+
+        // 测试组件1: 条件渲染
+        createComponent('test-toggle', () => {
+            const isOpen = useState(true);
+            window.testToggleState = isOpen;
+            
+            return () => html`
+                <div style="padding: 10px; border: 1px solid #ddd;">
+                    状态: ${isOpen() ? 'true' : 'false'}
+                    ${isOpen() ? html`<div style="padding: 5px; background: #e0e0e0;">内容区域</div>` : ''}
+                </div>
+            `;
+        });
+
+        // 测试组件2: 文本更新
+        createComponent('test-text', () => {
+            const count = useState(0);
+            window.testTextState = count;
+            
+            return () => html`
+                <div style="padding: 10px; border: 1px solid #ddd;">
+                    计数: ${count()}
+                </div>
+            `;
+        });
+
+        // 测试组件3: 混合内容
+        createComponent('test-mixed', () => {
+            const content = useState('text');
+            window.testMixedState = content;
+            
+            return () => html`
+                <div style="padding: 10px; border: 1px solid #ddd;">
+                    ${content() === 'template' ? html`<strong>模板内容</strong>` : 
+                      content() === 'html' ? '<em>HTML字符串</em>' : 
+                      `普通文本: ${content()}`}
+                </div>
+            `;
+        });
+
+        // 测试1: 条件渲染切换
+        async function runToggleTest() {
+            log('开始测试1: 条件渲染切换...');
+            const state = window.testToggleState;
+            const iterations = 1000;
+            
+            // 预热
+            for (let i = 0; i < 10; i++) {
+                state(!state());
+            }
+            
+            // 正式测试
+            const start = performance.now();
+            for (let i = 0; i < iterations; i++) {
+                state(!state());
+            }
+            const end = performance.now();
+            const duration = end - start;
+            
+            showResult('toggle-result', '条件渲染切换', duration, iterations);
+            log(`测试1完成: ${duration.toFixed(2)}ms (${iterations}次切换)`);
+        }
+
+        // 测试2: 文本更新
+        async function runTextUpdateTest() {
+            log('开始测试2: 频繁文本更新...');
+            const state = window.testTextState;
+            const iterations = 10000;
+            
+            // 预热
+            for (let i = 0; i < 10; i++) {
+                state(i);
+            }
+            
+            // 正式测试
+            const start = performance.now();
+            for (let i = 0; i < iterations; i++) {
+                state(i);
+            }
+            const end = performance.now();
+            const duration = end - start;
+            
+            showResult('text-result', '文本更新', duration, iterations);
+            log(`测试2完成: ${duration.toFixed(2)}ms (${iterations}次更新)`);
+        }
+
+        // 测试3: 混合内容切换
+        async function runMixedTest() {
+            log('开始测试3: 混合内容切换...');
+            const state = window.testMixedState;
+            const contents = ['text', 'template', 'html'];
+            const iterations = 1000;
+            
+            // 预热
+            for (let i = 0; i < 10; i++) {
+                state(contents[i % 3]);
+            }
+            
+            // 正式测试
+            const start = performance.now();
+            for (let i = 0; i < iterations; i++) {
+                state(contents[i % 3]);
+            }
+            const end = performance.now();
+            const duration = end - start;
+            
+            showResult('mixed-result', '混合内容切换', duration, iterations);
+            log(`测试3完成: ${duration.toFixed(2)}ms (${iterations}次切换)`);
+        }
+
+        log('性能测试页面加载完成');
+        log('点击按钮开始测试');
+    </script>
+</body>
+</html>
+
