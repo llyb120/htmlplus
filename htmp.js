@@ -1316,7 +1316,7 @@
         module.exports = API;
     }
     if (typeof window !== 'undefined') {
-        window.htmlplus = API;
+        window.htmp = API;
         // 暴露到全局便于直接使用
         //   Object.assign(window, API);
 

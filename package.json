@@ -2,7 +2,7 @@
   "name": "html+",
   "version": "1.0.0",
   "description": "极简响应式模板框架，支持 JSX",
-  "main": "htmlp.js",
+  "main": "htmp.js",
   "type": "module",
   "scripts": {
     "build": "node build.mjs",

@@ -25,9 +25,9 @@ HTML+ 回归html的本质，致力于让每个人都享受到编码的乐趣！
 
 ### 直接引入（推荐快速开始）
 ```html
-<script src="htmlp.js"></script>
+<script src="htmp.js"></script>
 <script>
-  const { createComponent, html, useState } = window.htmlplus;
+  const { createComponent, html, useState } = window.htmp;
   // 开始使用
 </script>
 ```
@@ -45,14 +45,14 @@ HTML+ 没有react繁琐的学习周期和坑，你只需要掌握三个函数(cr
 <head>
     <meta charset="UTF-8">
     <title>我的第一个 HTML+ 应用</title>
-    <script src="htmlp.js"></script>
+    <script src="htmp.js"></script>
 </head>
 <body>
     <!-- 使用组件 -->
     <my-counter></my-counter>
 
     <script>
-        const { createComponent, html, useState } = window.htmlplus;
+        const { createComponent, html, useState } = window.htmp;
 
         // 创建组件
         createComponent('my-counter', () => {
@@ -74,7 +74,7 @@ HTML+ 没有react繁琐的学习周期和坑，你只需要掌握三个函数(cr
 ```
 
 就是这么简单！只需要：
-1. 引入 `htmlp.js`
+1. 引入 `htmp.js`
 2. 使用 `createComponent` 创建组件
 3. 在 HTML 中使用自定义标签
 
@@ -504,7 +504,7 @@ createComponent('conditional-demo', () => {
 #### 在浏览器中使用（开发模式）
 
 ```html
-<script src="htmlp.js"></script>
+<script src="htmp.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <script src="./babel-plugin-jsx-to-html.brower.js"></script>
 
@@ -513,7 +513,7 @@ createComponent('conditional-demo', () => {
 </script>
 
 <script type="text/babel" data-plugins="jsx-to-html">
-    const { createComponent, useState } = window.htmlplus;
+    const { createComponent, useState } = window.htmp;
 
     createComponent('jsx-counter', () => {
         const count = useState(0);
