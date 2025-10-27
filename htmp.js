@@ -72,6 +72,8 @@
     const reactiveMap = new WeakMap();
     // 存储对象的父级信息
     const parentMap = new WeakMap();
+    // 缓存 setup 函数参数解析结果
+    const functionParamsCache = new WeakMap();
 
     function reactive(obj, parentTarget = null, parentKey = null) {
         if (!obj || typeof obj !== 'object') return obj;
@@ -244,6 +246,93 @@
 
     const MARKER_PREFIX = '{{lit-';
     const MARKER_SUFFIX = '}}';
+    const MARKER_REGEX = new RegExp(MARKER_PREFIX + '(\\d+)' + MARKER_SUFFIX);
+    const htmlStringCache = new Map();
+    const templateResultSnapshotCache = new WeakMap();
+    const VOID_ELEMENTS = new Set(['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
+        'link', 'meta', 'param', 'source', 'track', 'wbr']);
+    const functionSignatureCache = new WeakMap();
+    const styleStringCache = new WeakMap();
+    const _htmlParseDiv = typeof document !== 'undefined' ? document.createElement('div') : null;
+    const FAST_LIST_THRESHOLD = 50000;
+    const CHUNK_THRESHOLD = 100000;
+    const CHUNK_SIZE = 5000;
+
+    function escapeHtml(str) {
+        return String(str).replace(/[&<>"']/g, c => (
+            c === '&' ? '&amp;' :
+            c === '<' ? '&lt;' :
+            c === '>' ? '&gt;' :
+            c === '"' ? '&quot;' : '&#39;'
+        ));
+    }
+
+    function isSimpleWrapperTemplate(result) {
+        if (!(result && result.strings && result.strings.length === 2)) return null;
+        const open = result.strings[0].trim();
+        const close = result.strings[1].trim();
+        const m = open.match(/^<([a-zA-Z0-9-]+)>$/);
+        if (!m) return null;
+        const tag = m[1];
+        if (close !== `</${tag}>`) return null;
+        return { open: result.strings[0], close: result.strings[1] };
+    }
+
+    function scheduleChunkedHTMLAppend(self, open, close, newArray) {
+        const node = self.node;
+        const token = Symbol('chunk');
+        node._chunkToken = token;
+        node.innerHTML = '';
+        let i = 0;
+
+        function step(deadline) {
+            if (node._chunkToken !== token) return; // canceled
+            const batch = [];
+            let processed = 0;
+            const canContinue = () => !deadline || (typeof deadline.timeRemaining === 'function' && deadline.timeRemaining() > 1);
+            while (i < newArray.length && processed < CHUNK_SIZE && canContinue()) {
+                const v = newArray[i].values[0];
+                batch.push(open + escapeHtml(v == null ? '' : v) + close);
+                i++; processed++;
+            }
+            if (batch.length) node.insertAdjacentHTML('beforeend', batch.join(''));
+            if (i < newArray.length) {
+                if (typeof requestIdleCallback === 'function') {
+                    requestIdleCallback(step);
+                } else {
+                    setTimeout(step, 0);
+                }
+            } else {
+                // 完成后再写入缓存，避免中途跳过更新
+                self._cachedArray = newArray.map(item => self._cloneArrayItem(item));
+                self._cachedArraySource = newArray;
+            }
+        }
+
+        if (typeof requestIdleCallback === 'function') {
+            requestIdleCallback(step);
+        } else {
+            setTimeout(step, 0);
+        }
+    }
+
+    function isDestructuredSetup(fn) {
+        let cached = functionSignatureCache.get(fn);
+        if (cached && typeof cached.isDestructured === 'boolean') return cached.isDestructured;
+        const sig = fn.toString().trim();
+        const isDestructured = /^(?:\(?function\s*\(?\s*\{|\(\s*\{)/.test(sig);
+        functionSignatureCache.set(fn, { isDestructured });
+        return isDestructured;
+    }
+
+    function getTemplateSnapshot(result) {
+        let snapshot = templateResultSnapshotCache.get(result);
+        if (!snapshot) {
+            snapshot = { strings: result.strings, values: [...result.values] };
+            templateResultSnapshotCache.set(result, snapshot);
+        }
+        return snapshot;
+    }
 
     class TemplatePart {
         constructor(node, name) {
@@ -341,7 +430,11 @@
          */
         _isHTMLString(str) {
             if (typeof str !== 'string') return false;
-            
+
+            if (htmlStringCache.has(str)) {
+                return htmlStringCache.get(str);
+            }
+
             // 检查是否包含 [object Object]，如果有则给出警告
             if (str.includes('[object Object]')) {
                 console.error(
@@ -352,33 +445,117 @@
                     '✅ 正确用法：\n' +
                     '  html`<div>${slot()}</div>`\n\n' +
                     '提示：在条件渲染中也要使用 html``：\n' +
-                    '  ${show ? html`<div>${slot()}</div>` : \'\'}'
+                    "  ${show ? html`<div>${slot()}</div>` : ''}"
                 );
+                htmlStringCache.set(str, false);
                 return false;
             }
-            
+
             // 简单检测：包含 < 和 > 且看起来像标签
-            return /<[^>]+>/.test(str);
+            const result = /<[^>]+>/.test(str);
+            htmlStringCache.set(str, result);
+            return result;
         }
 
         /**
          * 智能更新数组 - 最小化 DOM 操作
          */
         _updateArray(newArray) {
-            // 获取当前的子节点
-            const oldChildren = Array.from(this.node.childNodes);
+            // 快速路径：同一数组引用则跳过
+            if (this._cachedArraySource === newArray) return;
+            const childNodes = this.node.childNodes; // live NodeList，按需索引
             const oldArray = this._cachedArray || [];
 
-            // 简单的 diff 算法
+            // 大列表快速路径：同构 TemplateResult 列表，使用拼接 innerHTML 一次性更新
             const newLength = newArray.length;
             const oldLength = oldArray.length;
+            
+            if (newLength >= FAST_LIST_THRESHOLD && newArray[0] instanceof TemplateResult) {
+                const simple = isSimpleWrapperTemplate(newArray[0]);
+                if (simple) {
+                    const baseStrings = newArray[0].strings;
+                    let homogeneous = true;
+                    for (let i = 1; i < newLength; i++) {
+                        const item = newArray[i];
+                        if (!(item instanceof TemplateResult) || item.strings !== baseStrings || item.values.length !== 1) {
+                            homogeneous = false; break;
+                        }
+                    }
+                    if (homogeneous) {
+                        const open = baseStrings[0];
+                        const close = baseStrings[1];
+                        
+                        // 首次渲染（oldArray为空）
+                        if (oldLength === 0) {
+                            if (newLength >= CHUNK_THRESHOLD) {
+                                // 超大列表：分片追加
+                                scheduleChunkedHTMLAppend(this, open, close, newArray);
+                                return;
+                            } else {
+                                // 直接一次性 innerHTML 更新
+                                const builder = new Array(newLength);
+                                for (let i = 0; i < newLength; i++) {
+                                    const v = newArray[i].values[0];
+                                    builder[i] = open + escapeHtml(v == null ? '' : v) + close;
+                                }
+                                this.node.innerHTML = builder.join('');
+                                this._cachedArray = newArray.map(item => this._cloneArrayItem(item));
+                                this._cachedArraySource = newArray;
+                                return;
+                            }
+                        }
+                        
+                        // 对于已经渲染过的列表，检查变化数量
+                        // 如果变化的项目较少（< 10%），使用diff算法进行最小粒度更新
+                        if (oldLength > 0 && newLength === oldLength) {
+                            let changedCount = 0;
+                            const maxChangesForDiff = Math.max(10, Math.floor(newLength * 0.1)); // 最多10%或至少10个
+                            
+                            for (let i = 0; i < newLength && changedCount <= maxChangesForDiff; i++) {
+                                if (!this._itemsEqual(newArray[i], oldArray[i])) {
+                                    changedCount++;
+                                }
+                            }
+                            
+                            // 如果变化量小，使用diff更新而不是全量刷新
+                            if (changedCount <= maxChangesForDiff) {
+                                // 跳过快速路径，使用下面的diff算法
+                            } else {
+                                // 变化量大，使用innerHTML全量更新
+                                const builder = new Array(newLength);
+                                for (let i = 0; i < newLength; i++) {
+                                    const v = newArray[i].values[0];
+                                    builder[i] = open + escapeHtml(v == null ? '' : v) + close;
+                                }
+                                this.node.innerHTML = builder.join('');
+                                this._cachedArray = newArray.map(item => this._cloneArrayItem(item));
+                                this._cachedArraySource = newArray;
+                                return;
+                            }
+                        } else {
+                            // 长度不同，全量更新
+                            const builder = new Array(newLength);
+                            for (let i = 0; i < newLength; i++) {
+                                const v = newArray[i].values[0];
+                                builder[i] = open + escapeHtml(v == null ? '' : v) + close;
+                            }
+                            this.node.innerHTML = builder.join('');
+                            this._cachedArray = newArray.map(item => this._cloneArrayItem(item));
+                            this._cachedArraySource = newArray;
+                            return;
+                        }
+                    }
+                }
+            }
+
+            // 简单的 diff 算法
             const minLength = Math.min(newLength, oldLength);
 
             // 1. 更新现有的项
             for (let i = 0; i < minLength; i++) {
                 const newItem = newArray[i];
                 const oldItem = oldArray[i];
-                const childNode = oldChildren[i];
+                const childNode = childNodes[i];
 
                 // 检查项是否相同
                 if (this._itemsEqual(newItem, oldItem)) {
@@ -394,34 +571,51 @@
                             childNode._templateInstance.update(newItem.values);
                         } else {
                             // 模板结构不同，需要重新创建
-                            const newContainer = document.createElement('span');
-                            render(newItem, newContainer);
-                            this.node.replaceChild(newContainer, childNode);
+                            // 根据模板内容创建合适的容器元素
+                            const fragment = document.createDocumentFragment();
+                            const tempContainer = document.createElement('div');
+                            render(newItem, tempContainer);
+                            // 将渲染结果移动到父节点
+                            while (tempContainer.firstChild) {
+                                fragment.appendChild(tempContainer.firstChild);
+                            }
+                            this.node.replaceChild(fragment, childNode);
                         }
                     } else {
                         // 没有模板实例，重新创建
-                        const newContainer = document.createElement('span');
-                        render(newItem, newContainer);
+                        const fragment = document.createDocumentFragment();
+                        const tempContainer = document.createElement('div');
+                        render(newItem, tempContainer);
+                        // 将渲染结果移动到父节点
+                        while (tempContainer.firstChild) {
+                            fragment.appendChild(tempContainer.firstChild);
+                        }
                         if (childNode) {
-                            this.node.replaceChild(newContainer, childNode);
+                            this.node.replaceChild(fragment, childNode);
                         } else {
-                            this.node.appendChild(newContainer);
+                            this.node.appendChild(fragment);
                         }
                     }
                 } else if (this._isHTMLString(newItem)) {
-                    // HTML 字符串 - 直接插入 HTML
-                    const tempDiv = document.createElement('div');
-                    tempDiv.innerHTML = newItem;
-                    const fragment = document.createDocumentFragment();
-                    while (tempDiv.firstChild) {
-                        fragment.appendChild(tempDiv.firstChild);
-                    }
-                    
-                    if (childNode) {
-                        // 替换现有节点
-                        this.node.replaceChild(fragment, childNode);
+                    // HTML 字符串 - 直接插入 HTML（复用全局解析容器，减少分配）
+                    if (_htmlParseDiv) {
+                        _htmlParseDiv.innerHTML = newItem;
+                        const fragment = document.createDocumentFragment();
+                        while (_htmlParseDiv.firstChild) {
+                            fragment.appendChild(_htmlParseDiv.firstChild);
+                        }
+                        if (childNode) {
+                            this.node.replaceChild(fragment, childNode);
+                        } else {
+                            this.node.appendChild(fragment);
+                        }
                     } else {
-                        this.node.appendChild(fragment);
+                        if (childNode) {
+                            childNode.textContent = String(newItem);
+                        } else {
+                            const textNode = document.createTextNode(String(newItem));
+                            this.node.appendChild(textNode);
+                        }
                     }
                 } else {
                     // 普通文本节点
@@ -440,32 +634,37 @@
 
             // 2. 添加新项
             if (newLength > oldLength) {
+                const batchFragment = document.createDocumentFragment();
                 for (let i = oldLength; i < newLength; i++) {
                     const newItem = newArray[i];
                     if (newItem instanceof TemplateResult) {
-                        const container = document.createElement('span');
-                        render(newItem, container);
-                        this.node.appendChild(container);
-                    } else if (this._isHTMLString(newItem)) {
-                        // HTML 字符串 - 直接插入
-                        const tempDiv = document.createElement('div');
-                        tempDiv.innerHTML = newItem;
-                        const fragment = document.createDocumentFragment();
-                        while (tempDiv.firstChild) {
-                            fragment.appendChild(tempDiv.firstChild);
+                        // 创建临时容器来渲染模板，然后提取实际的DOM节点
+                        const tempContainer = document.createElement('div');
+                        render(newItem, tempContainer);
+                        // 将渲染结果移动到fragment
+                        while (tempContainer.firstChild) {
+                            batchFragment.appendChild(tempContainer.firstChild);
                         }
-                        this.node.appendChild(fragment);
+                    } else if (this._isHTMLString(newItem)) {
+                        if (_htmlParseDiv) {
+                            _htmlParseDiv.innerHTML = newItem;
+                            while (_htmlParseDiv.firstChild) {
+                                batchFragment.appendChild(_htmlParseDiv.firstChild);
+                            }
+                        } else if (newItem != null) {
+                            batchFragment.appendChild(document.createTextNode(String(newItem)));
+                        }
                     } else if (newItem != null) {
-                        const textNode = document.createTextNode(String(newItem));
-                        this.node.appendChild(textNode);
+                        batchFragment.appendChild(document.createTextNode(String(newItem)));
                     }
                 }
+                this.node.appendChild(batchFragment);
             }
 
             // 3. 删除多余的项
             if (newLength < oldLength) {
-                for (let i = oldLength - 1; i >= newLength; i--) {
-                    const childNode = oldChildren[i];
+                for (let i = this.node.childNodes.length - 1; i >= newLength; i--) {
+                    const childNode = this.node.childNodes[i];
                     if (childNode) {
                         if (childNode._templateInstance) {
                             delete childNode._templateInstance;
@@ -476,13 +675,8 @@
             }
 
             // 缓存当前数组用于下次比较
-            this._cachedArray = newArray.map(item => {
-                // 深拷贝用于比较
-                if (item instanceof TemplateResult) {
-                    return { strings: item.strings, values: [...item.values] };
-                }
-                return item;
-            });
+            this._cachedArray = newArray.map(item => this._cloneArrayItem(item));
+            this._cachedArraySource = newArray;
         }
 
         /**
@@ -506,6 +700,13 @@
             return item1 === item2;
         }
 
+        _cloneArrayItem(item) {
+            if (item instanceof TemplateResult) {
+                return getTemplateSnapshot(item);
+            }
+            return item;
+        }
+
         commit() {
             const value = this.value;
 
@@ -527,11 +728,15 @@
                     this.node.innerHTML = value.html;
                 } else if (value instanceof TemplateResult) {
                     // 支持嵌套的 TemplateResult
-                    // 清空容器并重新渲染
-                    this.node.innerHTML = '';
-                    // 删除旧的模板实例引用，强制重新创建
-                    delete this.node._templateInstance;
-                    render(value, this.node);
+                    // 如果已存在实例且模板结构相同，直接更新 values
+                    if (this.node._templateInstance && this.node._templateInstance.template.strings === value.strings) {
+                        this.node._templateInstance.update(value.values);
+                    } else {
+                        // 模板结构不同，或不存在实例：清空并重新渲染
+                        this.node.innerHTML = '';
+                        delete this.node._templateInstance;
+                        render(value, this.node);
+                    }
                 } else if (Array.isArray(value)) {
                     // 支持数组（特别是 TemplateResult 数组）
                     // 使用智能 diff 算法，最小化 DOM 操作
@@ -649,7 +854,7 @@
                     const attributes = node.attributes;
                     for (let i = 0; i < attributes.length; i++) {
                         const attr = attributes[i];
-                        const match = attr.value.match(new RegExp(MARKER_PREFIX + '(\\d+)' + MARKER_SUFFIX));
+                        const match = attr.value.match(MARKER_REGEX);
                         if (match) {
                             const index = parseInt(match[1]);
                             const part = new TemplatePart(node, attr.name);
@@ -661,7 +866,7 @@
                 }
 
                 if (node.nodeType === Node.COMMENT_NODE) {
-                    const match = node.textContent.match(new RegExp(MARKER_PREFIX + '(\\d+)' + MARKER_SUFFIX));
+                    const match = node.textContent.match(MARKER_REGEX);
                     if (match) {
                         const index = parseInt(match[1]);
                         const textNode = document.createTextNode('');
@@ -837,18 +1042,26 @@
         if (!match) return [];
 
         const params = match[1];
+        let parsed = [];
+
         // 处理解构参数 {a, b = 'default'}
         if (params.trim().startsWith('{')) {
             const destructMatch = params.match(/\{([^}]+)\}/);
             if (destructMatch) {
-                return destructMatch[1].split(',').map(p => {
-                    const [name] = p.trim().split('=');
-                    return name.trim();
-                });
+                parsed = destructMatch[1]
+                    .split(',')
+                    .map(p => {
+                        const [name] = p.trim().split('=');
+                        return name.trim();
+                    })
+                    .filter(Boolean);
             }
+        } else {
+            parsed = params.split(',').map(p => p.trim()).filter(Boolean);
         }
 
-        return params.split(',').map(p => p.trim()).filter(Boolean);
+        functionParamsCache.set(func, parsed);
+        return parsed;
     }
 
     /**
@@ -874,11 +1087,10 @@
      */
     function createComponent(tagName, setupFn) {
         // 解析 setup 函数的参数（支持解构）
-        const isDestructured = setupFn.toString().trim().match(/^\(?function\s*\(?\s*\{/) ||
-            setupFn.toString().trim().match(/^\(\s*\{/);
+        const isDestructured = isDestructuredSetup(setupFn);
         let paramNames = [];
         if (isDestructured) {
-            paramNames = getFunctionParams(setupFn);
+            paramNames = functionParamsCache.get(setupFn) || getFunctionParams(setupFn);
         }
 
         class ReactiveComponent extends HTMLElement {
@@ -1227,9 +1439,13 @@
             }
             // 样式对象
             else if (key === 'style' && typeof value === 'object') {
-                const styleStr = Object.keys(value)
-                    .map(k => `${k.replace(/[A-Z]/g, m => '-' + m.toLowerCase())}: ${value[k]}`)
-                    .join('; ');
+                let styleStr = styleStringCache.get(value);
+                if (!styleStr) {
+                    styleStr = Object.keys(value)
+                        .map(k => `${k.replace(/[A-Z]/g, m => '-' + m.toLowerCase())}: ${value[k]}`)
+                        .join('; ');
+                    styleStringCache.set(value, styleStr);
+                }
                 opening += ` style="${styleStr}"`;
             }
             // value 属性总是动态的（即使是字符串/数字），以支持响应式更新
@@ -1255,9 +1471,7 @@
         opening += `>`;
 
         // 自闭合标签
-        const voidElements = ['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input',
-            'link', 'meta', 'param', 'source', 'track', 'wbr'];
-        if (voidElements.includes(tag)) {
+        if (VOID_ELEMENTS.has(tag)) {
             strings.push(opening.slice(0, -1) + ' />');
             return new TemplateResult(strings, values);
         }

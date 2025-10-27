@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="../htmp.js"></script>
+</head>
+<body>
+    <div id="root"></div>
+    <script>
+        const { createComponent, html, useState } = window.htmp;
+
+        
+        var arr = []
+        for (let i = 0; i < 10000000; i++) {
+            arr.push(i)
+        }
+        createComponent('my-counter', () => {
+            const count = useState(0);
+            const doClick = () => {
+                count(count() + 1)
+            }
+            return () => html`
+                <div>
+                    <button onclick=${doClick}>点击</button>
+                    ${arr.map(item => html`<div>${item + count()}</div>`)}
+                </div>
+            `
+        })
+        var begin = Date.now()
+        var root = document.getElementById('root')
+        root.innerHTML = `<my-counter></my-counter>`
+        console.log("HTM+ cost", Date.now() - begin)
+    </script>
+</body>
+</html>
